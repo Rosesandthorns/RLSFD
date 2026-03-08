@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rosie's Living Shiny Dex</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #05050f;
+            --bg2: #0a0a1e;
+            --surface: #0e0e22;
+            --surface2: #13132b;
+            --border: #1e1e40;
+            --border2: #2a2a52;
+            --gold: #ffd700;
+            --purple: #8b5cf6;
+            --text: #e0e0f5;
+            --text-dim: #7a7aa6;
+            --text-mid: #a0a0d0;
+            --caught-glow: rgba(255,215,0,0.15);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Barlow Condensed', sans-serif;
+            padding: 20px;
+            line-height: 1.2;
+        }
+
+        header {
+            max-width: 1400px;
+            margin: 0 auto 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .title-area h1 {
+            font-size: 2.2rem;
+            letter-spacing: 1px;
+            color: var(--gold);
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(255,215,0,0.2);
+        }
+
+        .stats-bar {
+            background: var(--surface);
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            min-width: 280px;
+        }
+
+        .progress-container {
+            height: 6px;
+            background: var(--bg);
+            border-radius: 3px;
+            margin: 8px 0;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--purple), var(--gold));
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .stats-text {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        .controls {
+            margin-bottom: 25px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            background: var(--bg2);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        button {
+            background: var(--surface2);
+            color: var(--text-mid);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            background: var(--border);
+            color: var(--text);
+        }
+
+        button.active {
+            background: var(--gold);
+            color: var(--bg);
+            border-color: var(--gold);
+            font-weight: bold;
+        }
+
+        .dex-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .group-wrapper {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .group-header {
+            background: var(--surface);
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--border);
+            border-left: 4px solid var(--purple);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .group-header:hover { background: var(--surface2); }
+        .group-header.closed { border-left-color: var(--text-dim); border-bottom: none; opacity: 0.8; }
+
+        .group-scroll-area {
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+        }
+        .group-scroll-area.hidden { display: none; }
+
+        .group-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 100px);
+            gap: 10px;
+        }
+
+        @media (max-width: 700px) {
+            .group-grid { grid-template-columns: repeat(3, 100px); }
+        }
+
+        .poke-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            width: 100px;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 4px;
+            text-align: center;
+            transition: all 0.1s ease;
+        }
+
+        .poke-card.caught {
+            background: var(--bg2);
+            border-color: var(--gold);
+            box-shadow: inset 0 0 12px var(--caught-glow);
+        }
+
+        .sprite-box {
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 6px;
+        }
+
+        .poke-card img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            filter: grayscale(0.9) opacity(0.3);
+        }
+
+        .poke-card.caught img {
+            filter: grayscale(0) opacity(1);
+            transform: scale(1.1);
+        }
+
+        .poke-name {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .poke-card.caught .poke-name {
+            color: var(--text);
+        }
+
+        .filter-hide { display: none !important; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="title-area">
+        <h1>Rosie's Living Shiny Dex</h1>
+        <p style="color: var(--text-dim); font-size: 0.9rem;">National Form Tracker</p>
+    </div>
+    <div class="stats-bar">
+        <div class="stats-text">
+            <span id="pct-label">0.00%</span>
+            <span><span id="caught-count">0</span> / <span id="total-count">0</span></span>
+        </div>
+        <div class="progress-container">
+            <div id="progress-fill"></div>
+        </div>
+    </div>
+</header>
+
+<div class="controls">
+    <button id="f-all" class="active" onclick="setFilter('all')">All</button>
+    <button id="f-caught" onclick="setFilter('caught')">Caught</button>
+    <button id="f-uncaught" onclick="setFilter('uncaught')">Uncaught</button>
+    <div style="width: 2px; height: 20px; background: var(--border); margin: 0 5px;"></div>
+    <button onclick="toggleAll(true)">Expand All</button>
+    <button onclick="toggleAll(false)">Collapse All</button>
+</div>
+
+<div id="dex" class="dex-container"></div>
+
+<script>
+const rawList = `Bulbasaur
+Ivysaur
+Venusaur M
+Venusaur F
+Charmander
+Charmeleon
+Charizard
+Squirtle
+Wartortle
+Blastoise
+Caterpie
+Metapod
+Butterfree M
+Butterfree F
+Weedle
+Kakuna
+Beedrill
+Pidgey
+Pidgeotto
+Pidgeot
+Rattata M
+Rattata F
+Rattata A
+Raticate M
+Raticate F
+Raticate A
+Spearow
+Ekans
+Arbok
+Pikachu M
+Pikachu F
+Raichu M
+Raichu F
+Raichu A
+Sandshrew
+Sandshrew A
+Sandslash
+Sandslash A
+Nidoran F
+Nidorina
+Nidoqueen
+Nidoran M
+Nidorino
+Nidoking
+Clefairy
+Clefable
+Vulpix
+Vulpix A
+Ninetales
+Ninetales A
+Jigglypuff
+Wigglytuff
+Zubat M
+Zubat F
+Golbat M
+Golbat F
+Oddish
+Gloom M
+Gloom F
+Vileplume M
+Vileplume F
+Paras
+Parasect
+Venonat
+Venomoth
+Diglett
+Diglett A
+Dugtrio
+Dugtrio A
+Meowth
+Meowth A
+Meowth G
+Persian
+Persian A
+Psyduck
+Golduck
+Mankey
+Primeape
+Growlithe
+Growlithe H
+Arcanine
+Arcanine H
+Poliwag
+Poliwhirl
+Poliwrath
+Abra
+Kadabra M
+Kadabra F
+Alakazam M
+Alakazam F
+Machop
+Machoke
+Machamp
+Bellsprout
+Weepinbell
+Victreebel
+Tentacool
+Tentacruel
+Geodude
+Geodude A
+Graveler
+Graveler A
+Golem
+Golem A
+Ponyta
+Ponyta G
+Rapidash
+Rapidash G
+Slowpoke
+Slowpoke G
+Slowbro
+Slowbro G
+Magnemite
+Magneton
+Farfetch’d
+Farfetch’d G
+Doduo M
+Doduo F
+Dodrio M
+Dodrio F
+Seel
+Dewgong
+Grimer
+Grimer A
+Muk
+Muk A
+Shellder
+Cloyster
+Gastly
+Haunter
+Gengar
+Onix
+Drowzee
+Hypno M
+Hypno F
+Krabby
+Kingler
+Voltorb
+Voltorb H
+Electrode
+Electrode H
+Exeggcute
+Exeggutor
+Exeggutor A
+Cubone
+Marowak
+Marowak A
+Hitmonlee
+Hitmonchan
+Lickitung
+Koffing
+Weezing
+Weezing G
+Rhyhorn M
+Rhyhorn F
+Rhydon M
+Rhydon F
+Chansey
+Tangela
+Kangaskhan
+Horsea
+Seadra
+Goldeen M
+Goldeen F
+Seaking M
+Seaking F
+Staryu
+Starmie
+Mr. Mime
+Mr. Mime G
+Scyther M
+Scyther F
+Jynx
+Electabuzz
+Magmar
+Pinsir
+Tauros
+Tauros P - Combat Form
+Tauros P - Blaze Form
+Tauros P - Aqua Form
+Magikarp M
+Magikarp F
+Gyarados M
+Gyarados F
+Lapras
+Ditto
+Eevee M
+Eevee F
+Vaporeon
+Jolteon
+Flareon
+Porygon
+Omanyte
+Omastar
+Kabuto
+Kabutops
+Aerodactyl
+Snorlax
+Articuno
+Zapdos
+Moltres
+Dratini
+Dragonair
+Dragonite
+Mewtwo
+Mew
+Chikorita
+Bayleef
+Meganium M
+Meganium F
+Cyndaquil
+Quilava
+Typhlosion
+Typhlosion H
+Totodile
+Croconaw
+Feraligatr
+Sentret
+Furret
+Hoothoot
+Noctowl
+Ledyba M
+Ledyba F
+Ledian M
+Ledian F
+Spinarak
+Ariados
+Crobat
+Chinchou
+Lanturn
+Pichu
+Cleffa
+Igglypuff
+Togepi
+Togetic
+Natu
+Xatu M
+Xatu F
+Mareep
+Flaaffy
+Ampharos
+Bellossom
+Marill
+Azumarill
+Sudowoodo M
+Sudowoodo F
+Politoed M
+Politoed F
+Hoppip
+Skiploom
+Jumpluff
+Aipom M
+Aipom F
+Sunkern
+Sunflora
+Yanma
+Wooper M
+Wooper F
+Wooper P
+Quagsire M
+Quagsire F
+Espeon
+Umbreon
+Murkrow M
+Murkrow F
+Slowking
+Slowking G
+Misdreavus
+Unown A
+Unown B
+Unown C
+Unown D
+Unown E
+Unown F
+Unown G
+Unown H
+Unown I
+Unown J
+Unown K
+Unown L
+Unown M
+Unown N
+Unown O
+Unown P
+Unown Q
+Unown R
+Unown S
+Unown T
+Unown U
+Unown V
+Unown W
+Unown X
+Unown Y
+Unown Z
+Unown !
+Unown ?
+Wobbuffet M
+Wobbuffet F
+Girafarig M
+Girafarig F
+Pineco
+Forretress
+Dunsparce
+Gligar M
+Gligar F
+Steelix M
+Steelix F
+Snubbull
+Granbull
+Qwilfish
+Qwilfish H
+Scizor M
+Scizor F
+Shuckle
+Heracross M
+Heracross F
+Sneasel M
+Sneasel F
+Sneasel H - M
+Sneasel H - F
+Teddiursa
+Ursaring M
+Ursaring F
+Slugma
+Magcargo
+Swinub
+Piloswine M
+Piloswine F
+Corsola
+Corsola G
+Remoraid
+Octillery M
+Octillery F
+Delibird
+Mantine
+Skarmory
+Houndour
+Houndoom M
+Houndoom F
+Kingdra
+Phanpy
+Donphan M
+Donphan F
+Porygon2
+Stantler
+Smeargle
+Tyrogue
+Hitmontop
+Smoochum
+Elekid
+Magby
+Miltank
+Blissey
+Raikou
+Entei
+Suicune
+Larvitar
+Pupitar
+Tyranitar
+Lugia
+Ho-Oh
+Celebi
+Treecko
+Grovyle
+Sceptile
+Torchic M
+Torchic F
+Combusken M
+Combusken F
+Blaziken M
+Blaziken F
+Mudkip
+Marshtomp
+Swampert
+Poochyena
+Mightyena
+Zigzagoon
+Zigzagoon G
+Linoone
+Linoone G
+Wurmple
+Silcoon
+Beautifly M
+Beautifly F
+Cascoon
+Dustox M
+Dustox F
+Lotad
+Lombre
+Ludicolo M
+Ludicolo F
+Seedot
+Nuzleaf M
+Nuzleaf F
+Shiftry M
+Shiftry F
+Taillow
+Swellow
+Wingull
+Pelipper
+Ralts
+Kirlia
+Gardevoir
+Surskit
+Masquerain
+Shroomish
+Breloom
+Slakoth
+Vigoroth
+Slaking
+Nincada
+Ninjask
+Shedinja
+Whismur
+Loudred
+Exploud
+Makuhita
+Hariyama
+Azurill
+Nosepass
+Skitty
+Delcatty
+Sableye
+Mawile
+Aron
+Lairon
+Aggron
+Meditite M
+Meditite F
+Medicham M
+Medicham F
+Electrike
+Manectric
+Plusle
+Minun
+Volbeat
+Illumise
+Roselia M
+Roselia F
+Gulpin M
+Gulpin F
+Swalot M
+Swalot F
+Carvanha
+Sharpedo
+Wailmer
+Wailord
+Numel M
+Numel F
+Camerupt M
+Camerupt F
+Torkoal
+Spoink
+Grumpig
+Spinda
+Trapinch
+Vibrava
+Flygon
+Cacnea
+Cacturne M
+Cacturne F
+Swablu
+Altaria
+Zangoose
+Seviper
+Lunatone
+Solrock
+Barboach
+Whiscash
+Corphish
+Crawdaunt
+Baltoy
+Claydol
+Lileep
+Cradily
+Anorith
+Armaldo
+Feebas
+Milotic M
+Milotic F
+Castform
+Castform Sunny
+Castform Rainy
+Castform Windy
+Kecleon
+Shuppet
+Banette
+Duskull
+Dusclops
+Tropius
+Chimecho
+Absol
+Wynaut
+Snorunt
+Glalie
+Spheal
+Sealeo
+Walrein
+Clamperl
+Huntail
+Gorebyss
+Relicanth M
+Relicanth F
+Luvdisc
+Bagon
+Shelgon
+Salamence
+Beldum
+Metang
+Metagross
+Regirock
+Regice
+Registeel
+Latias
+Latios
+Kyogre
+Groudon
+Rayquaza
+Jirachi
+Deoxys
+Deoxys Attack
+Deoxys Defense
+Deoxys Speed
+Turtwig
+Grotle
+Torterra
+Chimchar
+Monferno
+Infernape
+Piplup
+Prinplup
+Empoleon
+Starly M
+Starly F
+Staravia M
+Staravia F
+Staraptor M
+Staraptor F
+Bidoof M
+Bidoof F
+Bibarel M
+Bibarel F
+Kricketot M
+Kricketot F
+Kricketune M
+Kricketune F
+Shinx M
+Shinx F
+Luxio M
+Luxio F
+Luxray M
+Luxray F
+Budew
+Roserade M
+Roserade F
+Cranidos
+Rampardos
+Shieldon
+Bastidon
+Burmy
+Burmy Sand
+Burmy Trash
+Wormadan
+Wormadan Sand
+Wormadan Trash
+Mothim
+Combee M
+Combee F
+Vespiquen
+Pachirisu M
+Pachirisu F
+Buizel M
+Buizel F
+Floatzel M
+Floatzel F
+Cherubi
+Cherrim
+Shellos West
+Shellos East
+Gastrodon West
+Gastrodon East
+Ambipom M
+Ambipom F
+Drifloon
+Drifblim
+Buneary
+Lopunny
+Glameow
+Purugly
+Chingling
+Stunky
+Skuntank
+Bronzor
+Bronzong
+Bonsly
+Mime Jr.
+Happiny
+Chatot
+Spiritomb
+Gible M
+Gible F
+Gabite M
+Gabite F
+Garchomp M
+Garchomp F
+Munchlax
+Riolu
+Lucario
+Hippopotas M
+Hippopotas F
+Hippowdon M
+Hippowdon F
+Skorupi
+Drapion
+Croagunk M
+Croagunk F
+Toxicroak M
+Toxicroak F
+Carnivine
+Finneon M
+Finneon F
+Lumineon M
+Lumineon F
+Mantyke
+Snover M
+Snover F
+Abomasnow M
+Abomasnow F
+Weavile M
+Weavile F
+Magnezone
+Lickilicky
+Rhyperior M
+Rhyperior F
+Tangrowth M
+Tangrowth F
+Electivire
+Magmortar
+Togekiss
+Yanmega
+Leafeon
+Glaceon
+Gliscor
+Mamoswine M
+Mamoswine F
+Porygon-Z
+Gallade
+Probopass
+Dusknoir
+Froslass
+Rotom
+Rotom Heat
+Rotom Wash
+Rotom Frost
+Rotom Fan
+Rotom Mow
+Uxie
+Mesprit
+Azelf
+Dialga
+Palkia
+Heatran
+Regigigas
+Giratina
+Cresselia
+Phione
+Manaphy
+Darkrai
+Shaymin
+Arceus
+Snivy
+Servine
+Serperior
+Tepig
+Pignite
+Emboar
+Oshawott
+Dewott
+Samurott
+Samurott H
+Patrat
+Watchog
+Lillipup
+Herdier
+Stoutland
+Purrloin
+Liepard
+Pansage
+Simisage
+Pansear
+Simisear
+Panpour
+Simipour
+Munna
+Musharna
+Pidove
+Tranquill
+Unfezant M
+Unfezant F
+Blitzle
+Zebstrika
+Roggenrola
+Boldore
+Gigalith
+Woobat
+Swoobat
+Drilbur
+Excadrill
+Audino
+Timburr
+Gurdurr
+Conkeldurr
+Tympole
+Palpitoad
+Seismitoad
+Throh
+Sawk
+Sewaddle
+Swadloon
+Leavanny
+Venipede
+Whirlipede
+Scolipede
+Cottonee
+Whimsicott
+Petilil
+Lilligant
+Lilligant H
+Basculin Red
+Basculin Blue
+Basculin White
+Sandile
+Krokorok
+Krookodile
+Darumaka
+Darumaka G
+Darmanitan
+Darmanitan G
+Maracactus
+Dwebble
+Crustle
+Scraggy
+Scrafty
+Sigilyph
+Yamask
+Yamask G
+Cofagrigus
+Tirtouga
+Carracosta
+Archen
+Archeops
+Trubbish
+Garbodor
+Zorua
+Zorua H
+Zoroark
+Zoroark H
+Minccino
+Cinccino
+Gothita
+Gothorita
+Gothitelle
+Solosis
+Duosion
+Reuniclus
+Ducklett
+Swanna
+Vanillite
+Vanillish
+Vanilluxe
+Deerling Spring
+Deerling Summer
+Deerling Autumn
+Deerling Winter
+Sawsbuck Spring
+Sawsbuck Summer
+Sawsbuck Autumn
+Sawsbuck Winter
+Emolga
+Karrablast
+Escavalier
+Foongus
+Amoonguss
+Frillish M
+Frillish F
+Jellicent M
+Jellicent F
+Alomomola
+Joltik
+Galvantula
+Ferroseed
+Ferrothorn
+Klink
+Klang
+Klinklang
+Tynamo
+Eelektrik
+Eelektross
+Elgyem
+Beheeyem
+Litwick
+Lampent
+Chandelure
+Axew
+Fraxure
+Haxorus
+Cubchoo
+Beartic
+Cryogonal
+Shelmet
+Accelgor
+Stunfisk
+Stunfisk G
+Mienfoo
+Mienshao
+Druddigon
+Golett
+Golurk
+Pawniard
+Bisharp
+Bouffalant
+Rufflet
+Braviary
+Braviary G
+Vullaby
+Mandibuzz
+Heatmor
+Durant
+Deino
+Zweilous
+Hydreigon
+Larvesta
+Volcarona
+Cobalion
+Terrakion
+Virizion
+Tornadus Incarnate
+Tornadus Therian
+Thundurus Incarnate
+Thundurus Therian
+Reshiram
+Zekrom
+Landorus Incarnate
+Landorus Therian
+Kyurem
+Chespin
+Quilladin
+Chesnaught
+Fennekin
+Braixen
+Delphox
+Froakie
+Frogadier
+Greninja
+Bunnelby
+Diggersby
+Fletchling
+Fletchinder
+Talonflame
+Scatterbug
+Spewpa
+Vivillon - Icy Snow
+Vivillon - Polar
+Vivillon - Tundra
+Vivillon - Continental
+Vivillon - Garden
+Vivillon - Elegant
+Vivillon - Meadow
+Vivillon - Modern
+Vivillon - Marine
+Vivillon - Archipelago
+Vivillon - High Plains
+Vivillon - Sandstorm
+Vivillon - River
+Vivillon - Monsoon
+Vivillon - Savanna
+Vivillon - Sun
+Vivillon - Ocean
+Vivillon - Jungle
+Vivillon - Fancy
+Litleo
+Pyroar M
+Pyroar F
+Flabébé - Red
+Flabébé - Yellow
+Flabébé - Orange
+Flabébé - Blue
+Flabébé - White
+Floette - Red
+Floette - Yellow
+Floette - Orange
+Floette - Blue
+Floette - White
+Florges - Red
+Florges - Yellow
+Florges - Orange
+Florges - Blue
+Florges - White
+Skiddo
+Gogoat
+Pancham
+Pangoro
+Furfrou
+Furfrou - Heart
+Furfrou - Star
+Furfrou - Diamond
+Furfrou - Debutante
+Furfrou - Matron
+Furfrou - Dandy
+Furfrou - La Reine
+Furfrou - Kabuki
+Furfrou - Pharoah
+Espurr
+Meowstic M
+Meowstic F
+Honedge
+Doublade
+Aegislash
+Spritzee
+Aromatisse
+Swirlix
+Slurpuff
+Inkay
+Malamar
+Binacle
+Barbaracle
+Skrelp
+Dragalge
+Clauncher
+Clawitzer
+Helioptile
+Heliolisk
+Tyrunt
+Tyrantrum
+Amaura
+Aurorus
+Sylveon
+Hawlucha
+Dedenne
+Carbink
+Goomy
+Sliggoo
+Sliggoo H
+Goodra
+Goodra H
+Klefki
+Phantump
+Trevenant
+Pumpkaboo - Small
+Pumpkaboo - Normal
+Pumpkaboo - Large
+Pumpkaboo - Super
+Gourgeist - Small
+Gourgeist - Normal
+Gourgeist - Large
+Gourgeist - Super
+Bergmite
+Avalugg
+Avalugg H
+Noibat
+Noivern
+Xerneas
+Yveltal
+Zygarde - 10%
+Zygarde - 50%
+Rowlet
+Dartrix
+Decidueye
+Decidueye H
+Litten
+Torracat
+Incineroar
+Popplio
+Brionne
+Primarina
+Pikipek
+Trumbeak
+Toucannon
+Yungoos
+Gumshoos
+Grubbin
+Charjabug
+Vikavolt
+Crabrawler
+Crabominable
+Oricorio
+Oricorio - Pompom
+Oricorio - Pa’u
+Oricorio - Sensu
+Cutiefly
+Ribombee
+Rockruff
+Lycanroc - Day
+Lycanroc - Dusk
+Lycanroc - Night
+Wishiwashi
+Mareanie
+Toxapex
+Mudbray
+Mudsdale
+Dewpider
+Araquanid
+Fomantis
+Lurantis
+Morelull
+Shiinotic
+Salandit
+Salazzle
+Stufful
+Bewear
+Bounsweet
+Steenee
+Tsareena
+Comfey
+Oranguru
+Passimian
+Wimpod
+Golisopod
+Sandygast
+Palossand
+Pyukumuku
+Type: Null
+Silvally
+Minior - Red
+Minior - Orange
+Minior - Yellow
+Minior - Green
+Minior - Blue
+Minior - Indigo
+Minior - Violet
+Komala
+Turtonator
+Togedemaru
+Mimikyu
+Bruxish
+Drampa
+Dhelmise
+Jangmo-o
+Hakamo-o
+Kommo-o
+Tapu Koko
+Tapu Lele
+Tapu Bulu
+Tapu Fini
+Solgaleo
+Lunala
+Nihilego
+Buzzwole
+Pheromosa
+Xurkitree
+Celesteela
+Kartana
+Guzzlord
+Necrozma
+Poipole
+Naganadel
+Stakataka
+Blacephalon
+Meltan
+Melmetal
+Grookey
+Thwackey
+Rillaboom
+Scorbunny
+Raboot
+Cinderace
+Sobble
+Drizzile
+Inteleon
+Skwovet
+Greedent
+Rookidee
+Corvisquire
+Corviknight
+Blipbug
+Dottler
+Orbeetle
+Nickit
+Thievul
+Gossifleur
+Eldegoss
+Wooloo
+Dubwool
+Chewtle
+Drednaw
+Yamper
+Boltund
+Rolycoly
+Carkol
+Coalossal
+Applin
+Flapple
+Appletun
+Silicobra
+Sandaconda
+Cramorant
+Arrokuda
+Barraskewda
+Toxel
+Toxtricity - Amped
+Toxtricity - Low Key
+Sizzlipede
+Centiskorch
+Clobbopus
+Grapploct
+Sinistea - Phony
+Sinistea - Authentic
+Polteageist - Phony
+Polteageist - Authentic
+Hatenna
+Hattrem
+Hatterene
+Impidimp
+Morgrem
+Grimmsnarl
+Obstagoon
+Perrserker
+Cursola
+Sirfetch’d
+Mr. Rime
+Runerigus
+Milcery
+Alcremie - Vanilla Cream Strawberry Sweet
+Alcremie - Vanilla Cream Berry Sweet
+Alcremie - Vanilla Cream Love Sweet
+Alcremie - Vanilla Cream Star Sweet
+Alcremie - Vanilla Cream Clover Sweet
+Alcremie - Vanilla Cream Flower Sweet
+Alcremie - Vanilla Cream Ribbon Sweet
+Alcremie - Ruby Cream Strawberry Sweet
+Alcremie - Ruby Cream Berry Sweet
+Alcremie - Ruby Cream Love Sweet
+Alcremie - Ruby Cream Star Sweet
+Alcremie - Ruby Cream Clover Sweet
+Alcremie - Ruby Cream Flower Sweet
+Alcremie - Ruby Cream Ribbon Sweet
+Alcremie - Matcha Cream Strawberry Sweet
+Alcremie - Matcha Cream Berry Sweet
+Alcremie - Matcha Cream Love Sweet
+Alcremie - Matcha Cream Star Sweet
+Alcremie - Matcha Cream Clover Sweet
+Alcremie - Matcha Cream Flower Sweet
+Alcremie - Matcha Cream Ribbon Sweet
+Alcremie - Mint Cream Strawberry Sweet
+Alcremie - Mint Cream Berry Sweet
+Alcremie - Mint Cream Love Sweet
+Alcremie - Mint Cream Star Sweet
+Alcremie - Mint Cream Clover Sweet
+Alcremie - Mint Cream Flower Sweet
+Alcremie - Mint Cream Ribbon Sweet
+Alcremie - Lemon Cream Strawberry Sweet
+Alcremie - Lemon Cream Berry Sweet
+Alcremie - Lemon Cream Love Sweet
+Alcremie - Lemon Cream Star Sweet
+Alcremie - Lemon Cream Clover Sweet
+Alcremie - Lemon Cream Flower Sweet
+Alcremie - Lemon Cream Ribbon Sweet
+Alcremie - Salted Cream Strawberry Sweet
+Alcremie - Salted Cream Berry Sweet
+Alcremie - Salted Cream Love Sweet
+Alcremie - Salted Cream Star Sweet
+Alcremie - Salted Cream Clover Sweet
+Alcremie - Salted Cream Flower Sweet
+Alcremie - Salted Cream Ribbon Sweet
+Alcremie - Ruby Swirl Strawberry Sweet
+Alcremie - Ruby Swirl Berry Sweet
+Alcremie - Ruby Swirl Love Sweet
+Alcremie - Ruby Swirl Star Sweet
+Alcremie - Ruby Swirl Clover Sweet
+Alcremie - Ruby Swirl Flower Sweet
+Alcremie - Ruby Swirl Ribbon Sweet
+Alcremie - Caramel Swirl Strawberry Sweet
+Alcremie - Caramel Swirl Berry Sweet
+Alcremie - Caramel Swirl Love Sweet
+Alcremie - Caramel Swirl Star Sweet
+Alcremie - Caramel Swirl Clover Sweet
+Alcremie - Caramel Swirl Flower Sweet
+Alcremie - Caramel Swirl Ribbon Sweet
+Alcremie - Rainbow Swirl Strawberry Sweet
+Alcremie - Rainbow Swirl Berry Sweet
+Alcremie - Rainbow Swirl Love Sweet
+Alcremie - Rainbow Swirl Star Sweet
+Alcremie - Rainbow Swirl Clover Sweet
+Alcremie - Rainbow Swirl Flower Sweet
+Alcremie - Rainbow Swirl Ribbon Sweet
+Falinks
+Pincurchin
+Snom
+Frosmoth
+Stonjourner
+Eiscue
+Indeedee M
+Indeedee F
+Morpeko
+Cufant
+Copperajah
+Dracozolt
+Arctozolt
+Dracovish
+Arctovish
+Duraludon
+Dreepy
+Drakloak
+Dragapult
+Regieleki
+Regidrago
+Wyrdeer
+Kleavor
+Ursaluna
+Basculegion M
+Basculegion F
+Sneasler
+Overqwil
+Sprigatito
+Floragato
+Meowscarada
+Fuecoco
+Crocalor
+Skeledirge
+Quaxly
+Quaxwell
+Quaquaval
+Lechonk
+Oinkologne - M
+Oinkologne - F
+Tarountula
+Spidops
+Nymble
+Lokix
+Pawmi
+Pawmo
+Pawmot
+Tandemaus
+Maushold - Family of four
+Maushold - Family of three
+Fidough
+Dachsbun
+Smoliv
+Dolliv
+Arboliva
+Squawkabilly - Green
+Squawkabilly - Blue
+Squawkabilly - Yellow
+Squawkabilly - White
+Nacli
+Naclstack
+Garganacl
+Charcadet
+Armarouge
+Ceruledge
+Tadbulb
+Bellibolt
+Wattrel
+Kilowattrel
+Maschiff
+Mabosstiff
+Shroodle
+Grafaiai
+Bramblin
+Brambleghast
+Toedscool
+Toedscruel
+Klawf
+Capsakid
+Scovillain
+Rellor
+Rabsca
+Flittle
+Espathra
+Tinkatink
+Tinkatuff
+Tinkaton
+Wiglett
+Wugtrio
+Bombirdier
+Finizen
+Palafin
+Varoom
+Revavroom
+Cyclizar
+Orthworm
+Glimmet
+Glimmora
+Greavard
+Houndstone
+Flamigo
+Cetoddle
+Cetitan
+Veluza
+Dondozo
+Tatsugiri - Curly
+Tatsugiri - Droopy
+Tatsugiri - Stretchy
+Annihilape
+Clodsire
+Farigiraf
+Dudunsparce - two segment
+Dudunsparce - three segment
+Kingambit
+Great Tusk
+Scream Tail
+Brute Bonnet
+Flutter Mane
+Slither Wing
+Sandy Shocks
+Iron Treads
+Iron Bundle
+Iron Hands
+Iron Jugulis
+Iron Moth
+Iron Thorns
+Frigibax
+Arctibax
+Baxcalibur
+Gimmighoul
+Gholdengo
+Roaring Moon
+Iron Valiant
+Dipplin
+Poltchageist - Counterfeit
+Poltchageist - Artisan
+Sinistcha - Unremarkable
+Sinistcha - Masterpiece
+Archaludon
+Hydrapple`;
+
+// User's provided caught list plus the 87 newly added Pokemon
+const hardcodedCaught = [
+"Abra", "Aerodactyl", "Alakazam F", "Altaria", "Ampharos", "Arcanine", "Ariados", "Azumarill", "Banette", "Bayleef", "Beautifly F", "Beldum", "Bellossom", "Bellsprout", "Bibarel F", "Breloom", "Bronzong", "Bronzor", "Budew", "Buizel F", "Buizel M", "Carnivine", "Cascoon", "Chansey", "Chatot", "Chikorita", "Chimchar", "Cleffa", "Cloyster", "Corphish", "Cranidos", "Croagunk F", "Crobat", "Delibird", "Dewgong", "Ditto", "Dodrio F", "Doduo M", "Donphan F", "Dragonair", "Dratini", "Drifblim", "Dunsparce", "Dusclops", "Dusknoir", "Duskull", "Eevee M", "Electabuzz", "Electrode", "Electrode H", "Elekid", "Espeon", "Exeggcute", "Exeggutor", "Exeggutor A", "Finneon F", "Flaaffy", "Flareon", "Floatzel M", "Flygon", "Forretress", "Froslass", "Gabite F", "Gallade", "Garchomp M", "Gardevoir", "Gastly", "Geodude", "Gible F", "Giratina", "Glalie", "Glameow", "Gloom M", "Golbat F", "Golduck", "Golem", "Graveler", "Graveler A", "Grimer", "Grotle", "Growlithe", "Grumpig", "Gulpin F", "Gyarados F", "Gyarados M", "Happiny", "Haunter", "Heracross F", "Hippopotas M", "Hippowdon M", "Ho-Oh", "Honchkrow", "Hoothoot", "Hoppip", "Houndoom M", "Houndour", "Igglypuff", "Infernape", "Jigglypuff", "Jolteon", "Jumpluff", "Kadabra F", "Kirlia", "Koffing", "Kricketot F", "Kricketot M", "Kricketune M", "Lapras", "Larvitar", "Lickilicky", "Lickitung", "Linoone", "Lombre", "Lotad", "Lucario", "Ludicolo M", "Luvdisc", "Luxio M", "Luxray F", "Machamp", "Machoke", "Magcargo", "Magikarp M", "Magnemite", "Magneton", "Makuhita", "Mantine", "Mareep", "Marill", "Metagross", "Metang", "Monferno", "Mudkip", "Muk", "Munchlax", "Murkrow F", "Ninetales", "Noctowl", "Nosepass", "Octillery F", "Oddish", "Omastar", "Onix", "Paras", "Parasect", "Pichu", "Pikachu M", "Pineco", "Piplup", "Ponyta", "Poochyena", "Porygon", "Porygon-Z", "Porygon2", "Primeape", "Probopass", "Psyduck", "Pupitar", "Quagsire F", "Qwilfish", "Qwilfish H", "Raichu A", "Ralts", "Rampardos", "Rapidash", "Rayquaza", "Relicanth M", "Remoraid", "Rhydon F", "Riolu", "Roserade F", "Rotom", "Rotom Heat", "Rotom Wash", "Sableye", "Salamence", "Sandshrew", "Sandslash", "Scizor M", "Scyther F", "Sealeo", "Shellder", "Shellos West", "Shinx F", "Shinx M", "Shroomish", "Shuppet", "Skiploom", "Skorupi", "Skuntank", "Slakoth", "Slowbro", "Slowking", "Slowpoke", "Slugma", "Sneasel F", "Sneasel M", "Snorlax", "Snorunt", "Snover F", "Spinarak", "Spiritomb", "Spoink", "Stantler", "Staraptor F", "Staravia F", "Staravia M", "Starly F", "Starly M", "Starmie", "Steelix F", "Sudowoodo F", "Swalot M", "Swampert", "Tauros P - Combat Form", "Teddiursa", "Tepig", "Togetic", "Toxicroak F", "Tropius", "Turtwig", "Typhlosion H", "Tyranitar", "Umbreon", "Unown O", "Vaporeon", "Venomoth", "Venonat", "Vibrava", "Victreebel", "Vileplume M", "Voltorb", "Voltorb H", "Vulpix A", "Walrein", "Weavile M", "Weepinbell", "Wooper M", "Wurmple", "Zangoose", "Zigzagoon G", "Zubat F", "Zubat M", "Alcremie - Ruby Swirl Strawberry Sweet", "Appletun", "Applin", "Arctovish", "Arctozolt", "Armarouge", "Brambleghast", "Bramblin", "Capsakid", "Centiskorch", "Ceruledge", "Charcadet", "Chewtle", "Copperajah", "Corviknight", "Cufant", "Cursola", "Dracovish", "Dracozolt", "Drakloak", "Drednaw", "Eiscue", "Flapple", "Flittle", "Frosmoth", "Garganacl", "Gossifleur", "Grafaiai", "Grimmsnarl", "Grookey", "Impidimp", "Kilowattrel", "Klawf", "Kleavor", "Lechonk", "Lokix", "Mabosstiff", "Maschiff", "Milcery", "Morgrem", "Morpeko", "Mr. Rime", "Nymble", "Oinkologne - F", "Overqwil", "Pawmi", "Pawmo", "Rabsca", "Rellor", "Scovillain", "Shroodle", "Sinistea - Authentic", "Smoliv", "Sneasler", "Spidops", "Sprigatito", "Squawkabilly - Blue", "Stonjourner", "Tandemaus", "Tarountula", "Thwackey", "Toedscool", "Toedscruel", "Toxtricity - Amped", "Ursaluna", "Wattrel", "Wyrdeer", "Annihilape", "Arctibax", "Bombirdier", "Brute Bonnet", "Cetitan", "Cetoddle", "Clodsire", "Cyclizar", "Dondozo", "Dudunsparce - two segment", "Espathra", "Farigiraf", "Finizen", "Flamigo", "Flutter Mane", "Frigibax", "Gholdengo", "Gimmighoul", "Glimmora", "Great Tusk", "Greavard", "Iron Bundle", "Iron Hands", "Iron Jugulis", "Iron Moth", "Iron Thorns", "Iron Treads", "Iron Valiant", "Kingambit", "Orthworm", "Palafin", "Revavroom", "Roaring Moon", "Sandy Shocks", "Scream Tail", "Slither Wing", "Tatsugiri - Droopy", "Tinkaton", "Tinkatuff", "Varoom", "Veluza", "Wiglett", "Archaludon", "Dipplin", "Hydrapple",
+
+"Amoonguss", "Araquanid", "Avalugg", "Avalugg H", "Bergmite", "Bisharp", "Braviary G", "Carbink", "Chandelure", "Charjabug", "Clawitzer", "Cofagrigus", "Comfey", "Crabominable", "Crabrawler", "Cutiefly", "Deerling Spring", "Delphox", "Dragalge", "Drampa", "Drilbur", "Espurr", "Excadrill", "Fletchinder", "Foongus", "Fraxure", "Frogadier", "Gogoat", "Goodra", "Goomy", "Greninja", "Hakamo-o", "Hawlucha", "Heliolisk", "Honedge", "Hydreigon", "Jangmo-o", "Lampent", "Lilligant", "Litleo", "Litwick", "Lunala", "Lurantis", "Melmetal", "Meltan", "Meowstic F", "Mienfoo", "Mimikyu", "Minior - Blue", "Mudbray", "Mudsdale", "Noibat", "Noivern", "Oranguru", "Oricorio", "Palossand", "Pancham", "Passimian", "Pawniard", "Petilil", "Primarina", "Pyroar F", "Ribombee", "Rockruff", "Rowlet", "Rufflet", "Salandit", "Samurott H", "Sandygast", "Sawsbuck Spring", "Skiddo", "Sliggoo", "Stakataka", "Stunfisk G", "Swoobat", "Tapu Koko", "Toucannon", "Trevenant", "Vikavolt", "Virizion", "Volcarona", "Wimpod", "Zoroark", "Zoroark H", "Zorua", "Zorua H", "Zweilous"
+];
+
+let caughtSet = new Set(hardcodedCaught);
+let currentFilter = 'all';
+
+const homeSharedGenderDiffs = ['rattata', 'raticate', 'scyther', 'murkrow', 'piloswine', 'combee'];
+
+function getSpriteUrls(rawName) {
+    let name = rawName.trim().replace('’', "'");
+    let lower = name.toLowerCase();
+    let base = lower;
+    let homeSuffix = '';
+    let showdownSuffix = '';
+
+    if (lower.startsWith('unown')) {
+        const char = lower.split(' ')[1];
+        if (char === '!') homeSuffix = '-exclamation';
+        else if (char === '?') homeSuffix = '-question';
+        else homeSuffix = `-${char}`;
+        base = 'unown';
+    } 
+    else if (lower.startsWith('oinkologne')) {
+        base = 'oinkologne';
+        if (lower.includes('- f')) homeSuffix = '-female';
+    }
+    else if (lower === 'nidoran f') base = 'nidoran-f';
+    else if (lower === 'nidoran m') base = 'nidoran-m';
+    else if (lower.endsWith(' a')) {
+        base = lower.slice(0, -2); homeSuffix = '-alola'; showdownSuffix = '-alola';
+    } else if (lower.endsWith(' g')) {
+        base = lower.slice(0, -2); homeSuffix = '-galar'; showdownSuffix = '-galar';
+    } else if (lower.endsWith(' h')) {
+        base = lower.slice(0, -2); homeSuffix = '-hisui'; showdownSuffix = '-hisui';
+    } else if (lower.includes('sneasel h')) {
+        base = 'sneasel'; homeSuffix = '-hisui'; showdownSuffix = '-hisui';
+    }
+    else if (lower.endsWith(' m') || lower.endsWith(' f')) {
+        let gender = lower.slice(-1);
+        let gBase = lower.slice(0, -2);
+        if (homeSharedGenderDiffs.includes(gBase)) {
+            base = gBase; homeSuffix = '';
+        } else {
+            if (gender === 'f') { homeSuffix = '-f'; showdownSuffix = '-f'; }
+            base = gBase;
+        }
+    }
+
+    const specialMaps = {
+        'great tusk': 'great-tusk', 'scream tail': 'scream-tail', 'brute bonnet': 'brute-bonnet', 
+        'flutter mane': 'flutter-mane', 'slither wing': 'slither-wing', 'sandy shocks': 'sandy-shocks',
+        'iron treads': 'iron-treads', 'iron bundle': 'iron-bundle', 'iron hands': 'iron-hands',
+        'iron jugulis': 'iron-jugulis', 'iron moth': 'iron-moth', 'iron thorns': 'iron-thorns',
+        'roaring moon': 'roaring-moon', 'iron valiant': 'iron-valiant'
+    };
+    if (specialMaps[base]) base = specialMaps[base];
+
+    const formMaps = {
+        'sunny': '-sunny', 'rainy': '-rainy', 'snowy': '-snowy', 'west': '-west', 'east': '-east', 
+        'spring': '-spring', 'summer': '-summer', 'autumn': '-autumn', 'winter': '-winter', 
+        'day': '-midday', 'night': '-midnight', 'dusk': '-dusk', 'incarnate': '', 'therian': '-therian',
+        'curly': '-curly', 'droopy': '-droopy', 'stretchy': '-stretchy', 
+        'two segment': '-twosegment', 'three segment': '-threesegment', 
+        'authentic': '-antique', 'masterpiece': '-masterpiece',
+        'family of four': '-four', 'family of three': '-three',
+        'green': '-green', 'blue': '-blue', 'yellow': '-yellow', 'white': '-white'
+    };
+
+    for (let key in formMaps) {
+        if (lower.includes(key)) {
+            base = lower.split(key)[0].trim().replace(/[^a-z0-9\-]/g, '');
+            homeSuffix = formMaps[key];
+            showdownSuffix = formMaps[key];
+        }
+    }
+
+    let cleanBase = base.replace(/[^a-z0-9\-]/g, '');
+    return {
+        home: `https://img.pokemondb.net/sprites/home/shiny/${cleanBase}${homeSuffix}.png`,
+        showdown: `https://play.pokemonshowdown.com/sprites/dex-shiny/${cleanBase}${showdownSuffix}.png`
+    };
+}
+
+function init() {
+    const container = document.getElementById('dex');
+    const lines = rawList.split('\n').map(l => l.trim()).filter(l => l);
+    const blockSize = 30; 
+
+    for (let i = 0; i < lines.length; i += blockSize) {
+        const blockNum = Math.floor(i / blockSize) + 1;
+        const blockEnd = Math.min(i + blockSize, lines.length);
+        const blockLines = lines.slice(i, blockEnd);
+
+        const groupWrap = document.createElement('div');
+        groupWrap.className = 'group-wrapper';
+        groupWrap.innerHTML = `
+            <div class="group-header" id="gh-${blockNum}" onclick="toggleGroup(${blockNum})">
+                <span style="font-weight: 600; font-size: 1rem; letter-spacing: 0.5px;">Box ${blockNum} <small style="color:var(--text-dim); font-weight: 400; margin-left: 8px;">(${i+1}–${blockEnd})</small></span>
+                <span id="gs-${blockNum}" style="font-family: 'Space Mono'; font-size: 0.8rem; color: var(--gold)">0 / 30</span>
+            </div>
+            <div class="group-scroll-area" id="gsa-${blockNum}">
+                <div class="group-grid" id="gg-${blockNum}"></div>
+            </div>
+        `;
+        container.appendChild(groupWrap);
+
+        const grid = document.getElementById('gg-' + blockNum);
+        blockLines.forEach(name => {
+            const urls = getSpriteUrls(name);
+            const card = document.createElement('div');
+            // Check for match in our hardcoded caught set
+            card.className = 'poke-card' + (caughtSet.has(name) ? ' caught' : '');
+            card.innerHTML = `
+                <div class="sprite-box">
+                    <img src="${urls.home}" 
+                         loading="lazy" 
+                         alt="${name}"
+                         onerror="handleImgErr(this, '${urls.showdown}')">
+                </div>
+                <div class="poke-info">
+                    <div class="poke-name">${name}</div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+    updateStats();
+}
+
+function handleImgErr(img, backup) {
+    if (!img.dataset.triedBackup) {
+        img.dataset.triedBackup = "true";
+        img.src = backup;
+    } else {
+        img.src = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png";
+        img.style.opacity = "0.15";
+    }
+}
+
+function updateStats() {
+    const total = rawList.split('\n').filter(l => l.trim()).length;
+    const cnt = caughtSet.size;
+    const pct = total > 0 ? (cnt / total) * 100 : 0;
+    
+    document.getElementById('caught-count').textContent = cnt;
+    document.getElementById('total-count').textContent  = total;
+    document.getElementById('pct-label').textContent    = pct.toFixed(2) + '%';
+    document.getElementById('progress-fill').style.width = pct + '%';
+
+    document.querySelectorAll('.group-header').forEach(header => {
+        const id = header.id.split('-')[1];
+        const grid = document.getElementById('gg-' + id);
+        if (grid) {
+            const gTotal = grid.querySelectorAll('.poke-card').length;
+            const gCaught = grid.querySelectorAll('.poke-card.caught').length;
+            const gsSpan = document.getElementById('gs-' + id);
+            if (gsSpan) gsSpan.textContent = `${gCaught} / ${gTotal}`;
+        }
+    });
+}
+
+function toggleGroup(g) {
+    const scrollArea = document.getElementById('gsa-' + g);
+    const hdr  = document.getElementById('gh-' + g);
+    if (!scrollArea) return;
+    const isHidden = scrollArea.classList.toggle('hidden');
+    hdr.classList.toggle('closed', isHidden);
+}
+
+function toggleAll(expand) {
+    document.querySelectorAll('.group-scroll-area').forEach(scrollArea => {
+        scrollArea.classList.toggle('hidden', !expand);
+        const id = scrollArea.id.split('-')[1];
+        const hdr = document.getElementById('gh-' + id);
+        if (hdr) hdr.classList.toggle('closed', !expand);
+    });
+}
+
+function setFilter(mode) {
+    currentFilter = mode;
+    ['all','caught','uncaught'].forEach(m => {
+        const btn = document.getElementById('f-' + m);
+        if (btn) btn.classList.toggle('active', m === mode);
+    });
+    document.querySelectorAll('.poke-card').forEach(card => {
+        const isCaught = card.classList.contains('caught');
+        let hide = (currentFilter === 'caught' && !isCaught) || (currentFilter === 'uncaught' && isCaught);
+        card.classList.toggle('filter-hide', hide);
+    });
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
