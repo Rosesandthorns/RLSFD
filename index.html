@@ -277,6 +277,7 @@ Raticate M
 Raticate F
 Raticate A
 Spearow
+Fearow
 Ekans
 Arbok
 Pikachu M
@@ -364,8 +365,8 @@ Slowbro
 Slowbro G
 Magnemite
 Magneton
-Farfetch’d
-Farfetch’d G
+Farfetch'd
+Farfetch'd G
 Doduo M
 Doduo F
 Dodrio M
@@ -837,6 +838,8 @@ Drifloon
 Drifblim
 Buneary
 Lopunny
+Mismagius
+Honchkrow
 Glameow
 Purugly
 Chingling
@@ -1237,7 +1240,7 @@ Crabrawler
 Crabominable
 Oricorio
 Oricorio - Pompom
-Oricorio - Pa’u
+Oricorio - Pa'u
 Oricorio - Sensu
 Cutiefly
 Ribombee
@@ -1368,7 +1371,7 @@ Grimmsnarl
 Obstagoon
 Perrserker
 Cursola
-Sirfetch’d
+Sirfetch'd
 Mr. Rime
 Runerigus
 Milcery
@@ -1589,7 +1592,7 @@ let currentFilter = 'all';
 const homeSharedGenderDiffs = ['rattata', 'raticate', 'scyther', 'murkrow', 'piloswine', 'combee'];
 
 function getSpriteUrls(rawName) {
-    let name = rawName.trim().replace('’', "'");
+    let name = rawName.trim().replace('\u2019', "'");
     let lower = name.toLowerCase();
     let base = lower;
     let homeSuffix = '';
@@ -1645,7 +1648,8 @@ function getSpriteUrls(rawName) {
         'two segment': '-twosegment', 'three segment': '-threesegment', 
         'authentic': '-antique', 'masterpiece': '-masterpiece',
         'family of four': '-four', 'family of three': '-three',
-        'green': '-green', 'blue': '-blue', 'yellow': '-yellow', 'white': '-white'
+        'green': '-green', 'blue': '-blue', 'yellow': '-yellow', 'white': '-white',
+        'origin': '-origin'
     };
 
     for (let key in formMaps) {
@@ -1654,6 +1658,13 @@ function getSpriteUrls(rawName) {
             homeSuffix = formMaps[key];
             showdownSuffix = formMaps[key];
         }
+    }
+
+    // Handle "sky" form for Shaymin specially (avoid collision with other suffixes)
+    if (lower === 'shaymin sky') {
+        base = 'shaymin';
+        homeSuffix = '-sky';
+        showdownSuffix = '-sky';
     }
 
     let cleanBase = base.replace(/[^a-z0-9\-]/g, '');
@@ -1677,7 +1688,7 @@ function init() {
         groupWrap.className = 'group-wrapper';
         groupWrap.innerHTML = `
             <div class="group-header" id="gh-${blockNum}" onclick="toggleGroup(${blockNum})">
-                <span style="font-weight: 600; font-size: 1rem; letter-spacing: 0.5px;">Box ${blockNum} <small style="color:var(--text-dim); font-weight: 400; margin-left: 8px;">(${i+1}–${blockEnd})</small></span>
+                <span style="font-weight: 600; font-size: 1rem; letter-spacing: 0.5px;">Box ${blockNum} <small style="color:var(--text-dim); font-weight: 400; margin-left: 8px;">(${i+1}&ndash;${blockEnd})</small></span>
                 <span id="gs-${blockNum}" style="font-family: 'Space Mono'; font-size: 0.8rem; color: var(--gold)">0 / 30</span>
             </div>
             <div class="group-scroll-area" id="gsa-${blockNum}">
@@ -1690,7 +1701,6 @@ function init() {
         blockLines.forEach(name => {
             const urls = getSpriteUrls(name);
             const card = document.createElement('div');
-            // Check for match in our hardcoded caught set
             card.className = 'poke-card' + (caughtSet.has(name) ? ' caught' : '');
             card.innerHTML = `
                 <div class="sprite-box">
