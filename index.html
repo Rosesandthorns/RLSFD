@@ -3,891 +3,2349 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Infinite Game Vault</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Rosie's Living Shiny Dex</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --card-width: 240px;
-            --card-height: 330px;
-            --shine-opacity: 0;
-            --shine-pos-x: 50%;
-            --shine-pos-y: 50%;
-            --grid-color: rgba(59, 130, 246, 0.2); 
+            --bg: #05050f;
+            --bg2: #0a0a1e;
+            --surface: #0e0e22;
+            --surface2: #13132b;
+            --border: #1e1e40;
+            --border2: #2a2a52;
+            --gold: #ffd700;
+            --purple: #8b5cf6;
+            --text: #e0e0f5;
+            --text-dim: #7a7aa6;
+            --text-mid: #a0a0d0;
+            --caught-glow: rgba(255,215,0,0.15);
         }
 
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background: #050510;
-            color: white;
-            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Barlow Condensed', sans-serif;
+            padding: 20px;
+            line-height: 1.2;
+        }
+
+        header {
+            max-width: 1400px;
+            margin: 0 auto 30px;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* ── Canvas Cylinder Carousel Background ── */
-        .bg-scene {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            overflow: hidden;
-            background: #050510;
-        }
-
-        /* Vignette overlay — darkens edges so UI stays readable */
-        .bg-scene::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background:
-                radial-gradient(ellipse 55% 55% at 50% 50%, rgba(5,5,16,0.82) 0%, transparent 100%),
-                linear-gradient(to bottom, rgba(5,5,16,0.65) 0%, transparent 22%, transparent 78%, rgba(5,5,16,0.65) 100%);
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        #carouselCanvas {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            display: block;
-        }
-
-        #preload-overlay {
-            position: fixed;
-            inset: 0;
-            background: #050510;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 1.2rem;
-            transition: opacity 0.8s ease;
-        }
-        #preload-overlay.done {
-            opacity: 0;
-            pointer-events: none;
-        }
-        #preload-label {
-            color: rgba(255,255,255,0.35);
-            font-size: 0.7rem;
-            letter-spacing: 0.25em;
-            text-transform: uppercase;
-            font-family: monospace;
-        }
-        #preload-bar-track {
-            width: 220px;
-            height: 2px;
-            background: rgba(255,255,255,0.08);
-            border-radius: 99px;
-            overflow: hidden;
-        }
-        #preload-bar-fill {
-            height: 100%;
-            width: 0%;
-            background: rgba(59,130,246,0.8);
-            border-radius: 99px;
-            transition: width 0.15s ease;
-        }
-
-        .ambient-glow {
-            position: absolute;
-            width: 60vw;
-            height: 40vh;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.07) 0%, transparent 70%);
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 3;
-        }
-
-        .museum-stage {
-            perspective: 1200px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 400px; 
-            width: 100%;
-            position: relative;
-        }
-
-        .artifact-bundle {
-            position: relative;
-            display: flex;
-            align-items: center;
-            transform-style: preserve-3d;
-            transition: transform 0.1s ease-out;
-        }
-
-        .game-case {
-            width: var(--card-width);
-            height: var(--card-height);
-            position: relative;
-            transform-style: preserve-3d;
-            transition: opacity 0.8s ease-in-out;
-            cursor: pointer;
-            border-radius: 16px;
-            background-size: cover;
-            background-position: center;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.8);
-            z-index: 20;
-            opacity: 0;
-        }
-
-        /* DLC Stacks */
-        .dlc-stack {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 10;
-            transform: translateZ(-10px);
-        }
-        .dlc-stack-right { margin-left: -15px; }
-        .dlc-stack-left { margin-right: -15px; order: -1; }
-
-        .mini-dlc {
-            width: 60px;
-            height: 80px;
-            background-color: #1a1a2e;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            background-size: cover;
-            background-position: center;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            opacity: 0;
-        }
-
-        .dlc-stack-right .mini-dlc { transform: translateX(-20px); }
-        .dlc-stack-left .mini-dlc { transform: translateX(20px); }
-
-        .mini-dlc.show {
-            opacity: 1;
-            transform: translateX(25px);
-        }
-        .dlc-stack-left .mini-dlc.show {
-            transform: translateX(-25px);
-        }
-
-        .game-case::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 16px;
-            background: radial-gradient(
-                circle at var(--shine-pos-x) var(--shine-pos-y), 
-                rgba(255,255,255,0.4) 0%, 
-                transparent 65%
-            );
-            pointer-events: none;
-            opacity: var(--shine-opacity);
-            transition: opacity 0.3s;
-        }
-
-        .legendary {
-            border: 2px solid rgba(255, 215, 0, 0.4);
-            box-shadow: 0 0 35px rgba(255, 215, 0, 0.2), 0 25px 50px rgba(0,0,0,0.9);
-        }
-
-        .fade-in { opacity: 1; }
-        .fade-out { opacity: 0; }
-
-        .fact-item {
-            transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
-            transform: translateX(20px);
-            opacity: 0;
-        }
-        .fact-item.show {
-            transform: translateX(0);
-            opacity: 1;
-        }
-
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .main-container {
-            position: relative;
-            z-index: 10;
-            display: flex;
-            flex-direction: row; 
-            width: 100%;
-            max-width: 1100px;
-            height: 90vh;
-            align-items: center;
+            flex-wrap: wrap;
             justify-content: space-between;
-            padding: 0 2rem;
-            gap: 2.5rem;
+            align-items: center;
+            gap: 20px;
         }
 
-        @media (max-width: 900px) {
-            .main-container {
-                flex-direction: column;
-                height: auto;
-                padding: 1.5rem;
-                gap: 1.5rem;
-                justify-content: center;
-            }
-            body { overflow-y: auto; align-items: flex-start; }
-            .museum-stage { min-height: 420px; }
+        .title-area h1 {
+            font-size: 2.2rem;
+            letter-spacing: 1px;
+            color: var(--gold);
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(255,215,0,0.2);
+        }
+
+        .stats-bar {
+            background: var(--surface);
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            min-width: 280px;
+        }
+
+        .progress-container {
+            height: 6px;
+            background: var(--bg);
+            border-radius: 3px;
+            margin: 8px 0;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--purple), var(--gold));
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .stats-text {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        .controls {
+            margin-bottom: 25px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            background: var(--bg2);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        button {
+            background: var(--surface2);
+            color: var(--text-mid);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            background: var(--border);
+            color: var(--text);
+        }
+
+        button.active {
+            background: var(--gold);
+            color: var(--bg);
+            border-color: var(--gold);
+            font-weight: bold;
+        }
+
+        .dex-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .group-wrapper {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .group-header {
+            background: var(--surface);
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--border);
+            border-left: 4px solid var(--purple);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .group-header:hover { background: var(--surface2); }
+        .group-header.closed { border-left-color: var(--text-dim); border-bottom: none; opacity: 0.8; }
+
+        .group-scroll-area {
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+        }
+        .group-scroll-area.hidden { display: none; }
+
+        .group-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 100px);
+            gap: 10px;
+        }
+
+        @media (max-width: 700px) {
+            .group-grid { grid-template-columns: repeat(3, 100px); }
+        }
+
+        .poke-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            width: 100px;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 4px;
+            text-align: center;
+            transition: all 0.1s ease;
+        }
+
+        .poke-card.caught {
+            background: var(--bg2);
+            border-color: var(--gold);
+            box-shadow: inset 0 0 12px var(--caught-glow);
+        }
+
+        .sprite-box {
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 6px;
+        }
+
+        .poke-card img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            filter: grayscale(0.9) opacity(0.3);
+        }
+
+        .poke-card.caught img {
+            filter: grayscale(0) opacity(1);
+            transform: scale(1.1);
+        }
+
+        .poke-name {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .poke-card.caught .poke-name {
+            color: var(--text);
+        }
+
+        .filter-hide { display: none !important; }
+
+        /* ── Detail Panel ── */
+        .poke-card.caught {
+            cursor: pointer;
+        }
+        .poke-card.caught:hover {
+            border-color: var(--gold);
+            box-shadow: inset 0 0 18px var(--caught-glow), 0 0 8px rgba(255,215,0,0.12);
+            transform: translateY(-1px);
+        }
+
+        /* Slide-in tab panel anchored to the right */
+        #detail-panel {
+            position: fixed;
+            top: 0;
+            right: -360px;
+            width: 340px;
+            height: 100vh;
+            background: var(--surface);
+            border-left: 1px solid var(--border2);
+            box-shadow: -8px 0 32px rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            transition: right 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+            overflow: hidden;
+        }
+        #detail-panel.open {
+            right: 0;
+        }
+
+        /* Tab ear visible when closed so users know panel exists */
+        #detail-tab-ear {
+            position: absolute;
+            left: -28px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-right: none;
+            border-radius: 6px 0 0 6px;
+            width: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 5px;
+            cursor: pointer;
+            writing-mode: vertical-rl;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            gap: 4px;
+            transition: background 0.2s, color 0.2s;
+            user-select: none;
+        }
+        #detail-tab-ear:hover { background: var(--surface2); color: var(--text); }
+
+        #detail-panel-header {
+            background: var(--bg2);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 16px 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #detail-panel-sprite {
+            width: 72px;
+            height: 72px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+
+        #detail-panel-title {
+            flex: 1;
+        }
+        #detail-panel-title h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            line-height: 1.2;
+        }
+        #detail-panel-title .detail-dex-num {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+
+        #detail-close-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-family: 'Space Mono', monospace;
+            align-self: flex-start;
+            transition: all 0.15s;
+        }
+        #detail-close-btn:hover { border-color: var(--gold); color: var(--gold); background: none; }
+
+        #detail-panel-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #detail-panel-body::-webkit-scrollbar { width: 4px; }
+        #detail-panel-body::-webkit-scrollbar-track { background: transparent; }
+        #detail-panel-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+        .detail-row {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 10px 12px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            position: relative;
+        }
+        .detail-row.alpha-row {
+            border-color: var(--purple);
+            background: rgba(139,92,246,0.06);
+        }
+        .detail-row-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+        }
+        .detail-row-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .detail-row.alpha-row .detail-row-label { color: #a78bfa; }
+        .detail-row.alpha-row .detail-row-value { color: #c4b5fd; }
+
+        .detail-placeholder {
+            color: var(--text-dim);
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        .detail-section-divider {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--border2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 2px 0;
+        }
+        .detail-section-divider::before,
+        .detail-section-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* Overlay backdrop */
+        #detail-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            z-index: 999;
+        }
+        #detail-overlay.active { display: block; }
+
+        @media (max-width: 500px) {
+            #detail-panel { width: 100vw; right: -100vw; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Preload splash -->
-    <div id="preload-overlay">
-        <div id="preload-label">Loading vault&hellip; <span id="preload-count">0 / 0</span></div>
-        <div id="preload-bar-track"><div id="preload-bar-fill"></div></div>
+<header>
+    <div class="title-area">
+        <h1>Rosie's Living Shiny Dex</h1>
+        <p style="color: var(--text-dim); font-size: 0.9rem;">National Form Tracker</p>
     </div>
-
-    <div class="bg-scene">
-        <canvas id="carouselCanvas"></canvas>
-        <div class="ambient-glow"></div>
-    </div>
-
-    <div class="main-container">
-        <div class="flex-[1] flex flex-col items-center justify-center space-y-4">
-            <div class="museum-stage">
-                <div id="artifactBundle" class="artifact-bundle">
-                    <div id="dlcStackLeft" class="dlc-stack dlc-stack-left"></div>
-                    <div id="gameCard" class="game-case"></div>
-                    <div id="dlcStackRight" class="dlc-stack dlc-stack-right"></div>
-                </div>
-            </div>
-            
-            <div class="text-center space-y-2">
-                <h2 id="gameTitle" class="text-3xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-400"></h2>
-                <p id="gameCategory" class="text-blue-400 text-[10px] uppercase tracking-[0.3em] font-bold"></p>
-                <div id="priceBadge" class="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-700 shadow-lg shadow-blue-900/40 border border-blue-400/30"></div>
-                <div id="dlcCount" class="text-[9px] text-gray-500 uppercase tracking-widest mt-1"></div>
-            </div>
+    <div class="stats-bar">
+        <div class="stats-text">
+            <span id="pct-label">0.00%</span>
+            <span><span id="caught-count">0</span> / <span id="total-count">0</span></span>
         </div>
-
-        <div class="flex-1 max-w-sm w-full flex flex-col justify-center space-y-6">
-            <div class="space-y-1.5">
-                <h3 class="text-[10px] uppercase tracking-[0.4em] text-blue-400 font-bold">Museum Artifact Log</h3>
-                <div class="h-1 w-12 bg-blue-500 rounded-full"></div>
-            </div>
-            
-            <div id="factContainer" class="space-y-3"></div>
-
-            <div class="pt-4 flex items-center space-x-6 text-[10px] text-gray-500 border-t border-white/5">
-                <div class="flex flex-col">
-                    <span class="mb-0.5 uppercase tracking-tighter">Vault Value</span>
-                    <span class="text-white font-mono text-xs font-bold" id="totalValueDisplay">$0.00 CAD</span>
-                </div>
-                <div class="h-8 w-px bg-white/10"></div>
-                <div class="flex flex-col">
-                    <span class="mb-0.5 uppercase tracking-tighter">Total Titles</span>
-                    <span class="text-white font-mono text-xs font-bold" id="totalCountDisplay">0</span>
-                </div>
-            </div>
+        <div class="progress-container">
+            <div id="progress-fill"></div>
         </div>
     </div>
+</header>
 
-    <script>
-        const games = [
-            { title: "Abiotic Factor", category: "Action & Adventure", price: 32.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/427410/library_600x900.jpg" },
-            { title: "Anarcute", category: "Action & Adventure", price: 17.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/390720/library_600x900.jpg" },
-            { title: "Bendy and the Ink Machine", category: "Action & Adventure", price: 22.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/622650/library_600x900.jpg" },
-            { title: "Donkey Kong Bananza", category: "Action & Adventure", price: 89.99, rarity: "legendary", img: "https://placehold.co/600x900/6b4e31/white?text=DK+Bananza", dlcs: [{ title: "Banandium Gem Tracker DLC", price: 14.99, img: "https://cdn.cgmagonline.com/wp-content/uploads/2025/09/donkey-kong-bananza-dk-island-emerald-rush-dlc-review-2025-09-13-239259-1536x864.jpg" }] },
-            { title: "DREDGE", category: "Action & Adventure", price: 32.50, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1562430/library_600x900.jpg", dlcs: [{ title: "Digital Deluxe Edition", price: 12.00, img: "https://cdn.mobygames.com/covers/16981464-dredge-digital-deluxe-edition-xbox-one-front-cover.jpg" }, { title: "The Iron Rig", price: 15.50, img: "https://static.wikia.nocookie.net/dredge/images/8/84/The_Iron_Rig_DLC_keyart.png/revision/latest/scale-to-width-down/1200?cb=20240816101256" }, { title: "The Pale Reach", price: 7.50, img: "https://dredge.wiki.gg/images/thumb/b/b3/The_Pale_Reach_DLC_keyart.jpg/600px-The_Pale_Reach_DLC_keyart.jpg" }] },
-            { title: "Hollow Knight", category: "Action & Adventure", price: 19.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/367520/library_600x900.jpg" },
-            { title: "Hollow Knight: Silksong", category: "Action & Adventure", price: 25.99, rarity: "legendary", img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1030300/library_600x900.jpg" },
-            { title: "I am Fish", category: "Action & Adventure", price: 18.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1360570/library_600x900.jpg" },
-            { title: "Just Shapes & Beats", category: "Action & Adventure", price: 19.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/531510/library_600x900.jpg" },
-            { title: "No Man's Sky", category: "Action & Adventure", price: 69.99, rarity: "legendary", img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/275850/library_600x900.jpg" },
-            { title: "Peaks of Yore", category: "Action & Adventure", price: 22.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/2236070/library_600x900.jpg" },
-            { title: "Rain World", category: "Action & Adventure", price: 32.50, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/312520/library_600x900.jpg", dlcs: [{ title: "Downpour", price: 19.50, img: "https://cdn-products.eneba.com/resized-products/j03xspbeR7PRv2bbl4HU5R7osERq7TE7QJpaSx4mXbc_350x200_1x-0.png" }, { title: "The Watcher", price: 15.00, img: "https://media.nichegamer.com/wp-content/uploads/2024/03/Rain-World-03-29-24-1-768x432.jpg" }] },
-            { title: "SteamWorld Dig", category: "Action & Adventure", price: 13.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/252410/library_600x900.jpg" },
-            { title: "SteamWorld Dig 2", category: "Action & Adventure", price: 22.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/571310/library_600x900.jpg" },
-            { title: "Stray", category: "Action & Adventure", price: 36.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1332010/library_600x900.jpg" },
-            { title: "Tell Me Why", category: "Action & Adventure", price: 0.00, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1180660/library_600x900.jpg" },
-            { title: "The Legend of Zelda: Breath of the Wild", category: "Action & Adventure", price: 79.99, rarity: "legendary", img: "https://assets.nintendo.com/image/upload/f_auto/q_auto/dpr_2.0/c_scale,w_600/ncom/en_US/games/switch/t/the-legend-of-zelda-breath-of-the-wild-switch/hero" },
-            { title: "The Legend of Zelda: Tears of the Kingdom", category: "Action & Adventure", price: 79.99, rarity: "legendary", img: "https://assets.nintendo.com/image/upload/f_auto/q_auto/dpr_2.0/c_scale,w_600/ncom/en_US/games/switch/t/the-legend-of-zelda-tears-of-the-kingdom-switch/hero" },
-            { title: "20 Minutes Till Dawn", category: "Automation & Strategy", price: 12.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1966900/library_600x900.jpg" },
-            { title: "Balatro", category: "Automation & Strategy", price: 19.50, rarity: "legendary", img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/2379780/library_600x900.jpg" },
-            { title: "Brotato", category: "Automation & Strategy", price: 7.79, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1942280/library_600x900.jpg", dlcs: [{ title: "Abyssal Terrors", price: 4.99, img: "https://cdn.dekudeals.com/images/705858dcc0ef3ec6d16e14bb366c0fe53ab1b866/w500.jpg" }] },
-            { title: "Factorio", category: "Automation & Strategy", price: 45.00, rarity: "legendary", img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/427520/library_600x900.jpg", dlcs: [{ title: "Space Age", price: 47.00, img: "https://products.eneba.games/resized-products/VlBOr63x6GVrzKTEz4gmwOAUUk7PtiwVhzNzsbkrhM4_350x200_1x-0.jpg" }] },
-            { title: "Hytale + Supporter Edition", category: "Automation & Strategy", price: 0.00, img: "https://placehold.co/600x900/1a3a2a/white?text=Hytale", dlcs: [{ title: "Supporter Edition", price: 0.00, img: "https://hot.game/uploads/media/game/0002/51/5effd380efe52b9d249b219e2de5300b63e191ca.jpeg" }] },
-            { title: "Satisfactory", category: "Automation & Strategy", price: 51.99, rarity: "legendary", img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/526870/library_600x900.jpg" },
-            { title: "shapez", category: "Automation & Strategy", price: 24.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1318690/library_600x900.jpg", dlcs: [{ title: "Puzzle DLC", price: 7.99, img: "https://images.igdb.com/igdb/image/upload/t_cover_big_2x/co63md.jpg" }] },
-            { title: "shapez 2", category: "Automation & Strategy", price: 32.99, rarity: "legendary", img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/2162800/library_600x900.jpg", dlcs: [{ title: "Supporter Edition", price: 15.99, img: "https://hot.game/uploads/media/game/0002/51/5effd380efe52b9d249b219e2de5300b63e191ca.jpeg" }] },
-            { title: "Vampire Survivors", category: "Automation & Strategy", price: 7.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1794680/library_600x900.jpg" },
-            { title: "60 Parsecs!", category: "Horror & Survival", price: 19.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/646980/library_600x900.jpg" },
-            { title: "BIGFOOT", category: "Horror & Survival", price: 18.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/509980/library_600x900.jpg" },
-            { title: "Content Warning", category: "Horror & Survival", price: 9.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/2881650/library_600x900.jpg" },
-            { title: "Don't Starve", category: "Horror & Survival", price: 16.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/219740/library_600x900.jpg", dlcs: [{ title: "Hamlet", price: 9.99, img: "https://linuxgameconsortium.com/wp-content/uploads/2018/11/dont-starve-hamlet-dlc-now-steam-linux-mac-windows.png" }, { title: "Reign of Giants", price: 5.99, img: "https://cdn.dbolical.com/videos/games/1/22/21289/dont-starve-reign-of-giants-dlc-autumn-teaser.mp4.jpg" }, { title: "Shipwrecked", price: 9.99, img: "https://products.eneba.games/resized-products/JKoeEPOJ0x441eeBDN4NO9fwdHog0y6O-ztYV6CbB2g_350x200_1x-0.png" }] },
-            { title: "Don't Starve Together", category: "Horror & Survival", price: 18.49, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/322330/library_600x900.jpg", dlcs: [{ title: "Starter Pack 2023", price: 10.50, img: "https://en.mmoga.net/images/games/_ext/1488909/dont-starve-together-starter-pack-2023-dlc_large.png" }, { title: "Wortox Deluxe Chest", price: 7.99, img: "https://cdn.mobygames.com/covers/7433656-dont-starve-together-wortox-deluxe-chest-linux-front-cover.jpg" }] },
-            { title: "Lethal Company", category: "Horror & Survival", price: 9.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1966720/library_600x900.jpg" },
-            { title: "Phasmophobia", category: "Horror & Survival", price: 18.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/739630/library_600x900.jpg" },
-            { title: "Resident Evil HD REMASTER", category: "Horror & Survival", price: 24.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/304240/library_600x900.jpg" },
-            { title: "Resident Evil 0 HD Remaster", category: "Horror & Survival", price: 24.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/339340/library_600x900.jpg" },
-            { title: "Resident Evil 5 Gold Edition", category: "Horror & Survival", price: 29.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/21690/library_600x900.jpg" },
-            { title: "Resident Evil 6 Complete", category: "Horror & Survival", price: 29.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/221040/library_600x900.jpg" },
-            { title: "Subnautica", category: "Horror & Survival", price: 36.99, rarity: "legendary", img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/264710/library_600x900.jpg" },
-            { title: "Subnautica: Below Zero", category: "Horror & Survival", price: 36.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/848450/library_600x900.jpg" },
-            { title: "The Survivalists", category: "Horror & Survival", price: 29.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/897300/library_600x900.jpg" },
-            { title: "FNaF 1: Pocket Edition", category: "Horror & Survival", price: 3.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/319510/library_600x900.jpg" },
-            { title: "Animal Crossing: New Horizons", category: "Management & Simulation", price: 79.99, rarity: "legendary", img: "https://assets.nintendo.com/image/upload/f_auto/q_auto/dpr_2.0/c_scale,w_600/ncom/en_US/games/switch/a/animal-crossing-new-horizons-switch/hero", dlcs: [{ title: "Happy Home Paradise", price: 32.99, img: "https://nintendoeverything.com/wp-content/uploads/animal-crossing-happy-home-paradise-dlc-scaled.jpg" }, { title: "Switch 2 Upgrade Pack", price: 9.99, img: "https://cdn.cdkeys.com/496x700/media/catalog/product/p/o/pokemon_za_switch_2_up_edition.png" }] },
-            { title: "Barista Simulator", category: "Management & Simulation", price: 18.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1694510/library_600x900.jpg" },
-            { title: "Cities: Skylines", category: "Management & Simulation", price: 39.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/255710/library_600x900.jpg", dlcs: [{ title: "Mass Transit", price: 14.99, img: "https://gamestorebd.com/wp-content/uploads/2023/06/49047.jpg" }, { title: "Natural Disasters", price: 14.99, img: "https://3rd-strike.com/wp-content/uploads/2016/11/Cities-Sky-DLC-590x338.png" }, { title: "Modern City Center", price: 7.99, img: "https://images.2game.com/screenshot/cities-skylines-content-creator-pack-modern-city-center-buy-cdkey-0.png" }, { title: "University City", price: 7.99, img: "https://images.gamewatcherstatic.com/image/file/7/5a/99687/Cities-Skylines-1024x576.png" }, { title: "Downtown Radio", price: 4.99, img: "https://images.igdb.com/igdb/image/upload/t_cover_big_2x/co68s7.jpg" }] },
-            { title: "Cooking Simulator", category: "Management & Simulation", price: 22.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/641320/library_600x900.jpg", dlcs: [{ title: "Cakes and Cookies", price: 9.99, img: "https://cdn.mobygames.com/covers/18096924-cooking-simulator-cakes-cookies-windows-apps-front-cover.jpg" }, { title: "Pizza", price: 9.99, img: "https://static.wikia.nocookie.net/cookingsimulator/images/3/36/Pizza_steam.jpg/revision/latest?cb=20210826181246" }, { title: "Sushi", price: 9.99, img: "https://cogconnected.com/wp-content/uploads/2023/10/cooking-simulator-sushi.jpg" }, { title: "Chaos Tool", price: 0.00, img: "https://cdn.mobygames.com/covers/18583113-cooking-simulator-chaos-tool-free-dlc-windows-front-cover.jpg" }, { title: "Cooking with Food Network", price: 9.99, img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1168680/ss_e59551e117dbf0857b6abf9272ac6de5f8b0ed5e.1920x1080.jpg?t=1725000612" }, { title: "Shelter", price: 9.99, img: "https://static0.gamerantimages.com/wordpress/wp-content/uploads/2021/09/Cooking-Simulator-Shelter-Logo.jpg" }] },
-            { title: "Game Dev Tycoon", category: "Management & Simulation", price: 14.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/239820/library_600x900.jpg" },
-            { title: "Going Medieval", category: "Management & Simulation", price: 32.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1029780/library_600x900.jpg" },
-            { title: "Good Company", category: "Management & Simulation", price: 27.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/911430/library_600x900.jpg" },
-            { title: "Hydroneer", category: "Management & Simulation", price: 22.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1106840/library_600x900.jpg" },
-            { title: "Let's Build a Zoo", category: "Management & Simulation", price: 22.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1547890/library_600x900.jpg", dlcs: [{ title: "Aquarium Odyssey", price: 9.99, img: "https://img.youtube.com/vi/GtWqi6u0DfM/sddefault.jpg" }, { title: "Dinosaur Island", price: 9.99, img: "https://cdn.mobygames.com/covers/10978955-lets-build-a-zoo-dinosaur-island-playstation-4-front-cover.jpg" }] },
-            { title: "Lobotomy Corporation", category: "Management & Simulation", price: 22.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/568220/library_600x900.jpg" },
-            { title: "My Dream Setup", category: "Management & Simulation", price: 18.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/2200780/library_600x900.jpg", dlcs: [{ title: "Bathroom", price: 4.99, img: "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2926420/ss_cf703a288bbd3feeff1c4a305118fe14c8e29e7b.1920x1080.jpg?t=1725005470" }, { title: "Garage", price: 4.99, img: "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3371380/ss_3c5164a450a866336023886d9be94c58cc13979b.1920x1080.jpg?t=1732910025" }, { title: "Kitchen", price: 4.99, img: "https://cdn.akamai.steamstatic.com/steam/apps/2926430/ss_cdbe5d0ecccd81c9e5888318d3fdcbd3e3d4d648.1920x1080.jpg?t=1712840345" }, { title: "Pets", price: 4.99, img: "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2637930/ss_c9b1165d356ead9ccffd422c93ba132566fd8a62.1920x1080.jpg?t=1752741505" }, { title: "Sim Racing", price: 4.99, img: "https://img.gg.deals/c5/6a/e924338265c0ade3fd0622843e1af2e833f0_1920xt1080_S1000.jpg" }] },
-            { title: "Oxygen Not Included", category: "Management & Simulation", price: 29.99, rarity: "legendary", img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/457140/library_600x900.jpg", dlcs: [{ title: "Spaced Out!", price: 16.99, img: "https://www.mobygames.com/images/covers/l/824609-oxygen-not-included-spaced-out-linux-front-cover.jpg" }, { title: "Bionic Booster", price: 5.49, img: "https://oxygennotincluded.wiki.gg/images/thumb/c/c7/The_Bionic_Booster_Pack_Logo.png/420px-The_Bionic_Booster_Pack_Logo.png?92ea44" }, { title: "Frosty Planet", price: 5.49, img: "https://i.redd.it/xic70ll4uj9d1.jpeg" }, { title: "Prehistoric Planet", price: 5.49, img: "https://img.gg.deals/cb/b1/581b7308b662e13583fb18ea24bb59cd8023_1232xr706_Q100.jpg" }, { title: "Neutronium Cosmetics", price: 5.49, img: "https://img.gg.deals/b0/70/0d4981789053dff90ebac45a8dcee364f055_1232xr706_Q100.jpg" }] },
-            { title: "Prison Architect", category: "Management & Simulation", price: 36.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/233450/library_600x900.jpg", dlcs: [{ title: "Gangs", price: 7.99, img: "https://cdn.mobygames.com/covers/11234680-prison-architect-gangs-windows-apps-front-cover.jpg" }, { title: "Going Green", price: 12.99, img: "https://nintendoeverything.com/wp-content/uploads/prison-architect-going-green-scaled.jpg" }, { title: "Island Bound", price: 12.99, img: "https://linuxgameconsortium.com/wp-content/uploads/2020/05/island-bound-dlc-announced-prison-architect-linux-mac-windows-pc.jpg" }, { title: "Future Tech", price: 3.99, img: "https://cdn.mobygames.com/covers/11235705-prison-architect-future-tech-pack-windows-apps-front-cover.jpg" }, { title: "Second Chances", price: 7.99, img: "https://cdn.mobygames.com/covers/11234665-prison-architect-second-chances-linux-front-cover.jpg" }, { title: "Psych Ward", price: 7.99, img: "https://cogconnected.com/wp-content/uploads/2017/06/prison-architect-psych-ward-top-min.jpg" }, { title: "Undead", price: 3.99, img: "https://prisonarchitect.paradoxwikis.com/images/thumb/9/94/Banner_Undead.jpg/330px-Banner_Undead.jpg" }, { title: "Perfect Storm", price: 12.99, img: "https://cdn.mobygames.com/covers/11234671-prison-architect-perfect-storm-windows-apps-front-cover.jpg" }, { title: "Jungle Pack", price: 3.99, img: "https://fanatical.imgix.net/product/original/d5383711-9b65-4ae7-b9ce-5e7b92529b0a.jpeg?auto=compress" }, { title: "Aficionado", price: 0.00, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1139320/library_600x900.jpg" }] },
-            { title: "Slime Rancher", category: "Management & Simulation", price: 22.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/433340/library_600x900.jpg" },
-            { title: "Slime Rancher 2", category: "Management & Simulation", price: 38.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1657630/library_600x900.jpg" },
-            { title: "Spore", category: "Management & Simulation", price: 22.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/17390/library_600x900.jpg", dlcs: [{ title: "Creepy & Cute", price: 12.99, img: "https://www.mobygames.com/images/covers/l/197969-spore-creepy-cute-parts-pack-macintosh-front-cover.jpg" }, { title: "Galactic Adventures", price: 25.99, img: "https://cdn.mobygames.com/covers/3284494-spore-galactic-adventures-windows-manual.jpg" }] },
-            { title: "Supermarket Simulator", category: "Management & Simulation", price: 16.79, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/2670630/library_600x900.jpg" },
-            { title: "The Final Earth 2", category: "Management & Simulation", price: 9.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1180130/library_600x900.jpg" },
-            { title: "The Wandering Village", category: "Management & Simulation", price: 27.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1121640/library_600x900.jpg" },
-            { title: "Thief Simulator (NSW)", category: "Management & Simulation", price: 22.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/704850/library_600x900.jpg" },
-            { title: "Timberborn", category: "Management & Simulation", price: 29.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1062090/library_600x900.jpg" },
-            { title: "Minecraft: Java Edition", category: "Minecraft Collection", price: 39.99, rarity: "legendary", img: "https://placehold.co/600x900/226622/white?text=Minecraft+Java" },
-            { title: "Minecraft: Windows Edition", category: "Minecraft Collection", price: 39.99, rarity: "legendary", img: "https://placehold.co/600x900/226622/white?text=Minecraft+Windows" },
-            { title: "Minecraft Dungeons", category: "Minecraft Collection", price: 29.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1672970/library_600x900.jpg", dlcs: [{ title: "Jungle Awakens", price: 7.99, img: "https://progameguides.com/wp-content/uploads/2020/05/minecraft-dungeons-jungle-awakens-map.jpg" }, { title: "Creeping Winter", price: 7.99, img: "https://progameguides.com/wp-content/uploads/2020/05/featured-minecraft-dungeons-creeping-winter.jpg" }, { title: "Howling Peaks", price: 7.99, img: "https://static2.gamerantimages.com/wordpress/wp-content/uploads/2020/12/minecraft-dungeons-howling-peaks.jpg" }, { title: "Flames of Nether", price: 7.99, img: "https://nintendoeverything.com/wp-content/uploads/minecraft-dungeons-flames-of-the-nether.jpg" }, { title: "Hidden Depths", price: 7.99, img: "https://cogconnected.com/wp-content/uploads/2021/05/Minecraft-Dungeons-Hidden-Depths-890x520-min-700x409.jpg" }, { title: "Echoing Void", price: 7.99, img: "https://static1.srcdn.com/wordpress/wp-content/uploads/2021/07/minecraft-dungeons-echoing-void-dlc-announced-01.jpg" }] },
-            { title: "Cult of the Lamb", category: "Nintendo / Platformer", price: 29.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1313140/library_600x900.jpg", dlcs: [{ title: "Cultist Pack", price: 6.49, img: "https://cdn-ext.fanatical.com/production/product/1280x720/e1de9d11-7610-48f8-bc68-b3b4995125c5.jpeg" }, { title: "Heretic Pack", price: 6.49, img: "https://img.gg.deals/f1/75/c30cd17a256e013eac97eac2eb561824a13e_1920xt1080_S1000.jpg" }, { title: "Sinful Pack", price: 6.49, img: "https://cdn.mobygames.com/covers/18119633-cult-of-the-lamb-sinful-pack-xbox-one-front-cover.png" }] },
-            { title: "The Binding of Isaac: Rebirth", category: "Nintendo / Platformer", price: 17.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/250900/library_600x900.jpg", dlcs: [{ title: "Afterbirth", price: 12.99, img: "https://image.api.playstation.com/cdn/UP2103/CUSA00792_00/OBFoC2B2fAdbdKR9iPCJcDQaSKylLmhw.png" }, { title: "Afterbirth+", price: 12.99, img: "http://www.mobygames.com/images/covers/l/361497-the-binding-of-isaac-rebirth-xbox-one-front-cover.png" }, { title: "Repentance", price: 19.50, img: "https://www.gry-online.pl/i/h/1/75653262.jpg" }] },
-            { title: "Pokémon Legends: Z-A", category: "Pokémon Collection", price: 89.99, rarity: "legendary", img: "https://placehold.co/600x900/222/white?text=Pokemon+ZA", dlcs: [{ title: "Switch 2 Upgrade Pack", price: 15.00, img: "https://cdn.cdkeys.com/496x700/media/catalog/product/p/o/pokemon_za_switch_2_up_edition.png" }, { title: "Mega Dimension", price: 40.00, img: "https://images.rpgsite.net/articles/thumbnail/da49c9a1/18419/original/pokemon-legends-z-a-mega-dimension-dlc-thumb.png" }] },
-            { title: "Pokémon Scarlet", category: "Pokémon Collection", price: 79.99, rarity: "legendary", img: "https://assets.nintendo.com/image/upload/f_auto/q_auto/dpr_2.0/c_scale,w_600/ncom/en_US/games/switch/p/pokemon-scarlet-switch/hero", zoomFix: true, dlcs: [{ title: "Area Zero DLC", price: 44.99, img: "https://rectifygaming.com/wp-content/uploads/2023/08/pokemon-scarlet-violet-dlc.webp"}] },
-            { title: "Pokémon Violet", category: "Pokémon Collection", price: 79.99, rarity: "legendary", img: "https://assets.nintendo.com/image/upload/f_auto/q_auto/dpr_2.0/c_scale,w_600/ncom/en_US/games/switch/p/pokemon-violet-switch/hero", zoomFix: true, dlcs: [{ title: "Area Zero DLC", price: 44.99, img: "https://rectifygaming.com/wp-content/uploads/2023/08/pokemon-scarlet-violet-dlc.webp"}] },
-            { title: "Pokémon Sword", category: "Pokémon Collection", price: 79.99, img: "https://assets.nintendo.com/image/upload/f_auto/q_auto/dpr_2.0/c_scale,w_600/ncom/en_US/games/switch/p/pokemon-sword-switch/hero", dlcs: [{ title: "Expansion Pass", price: 39.99, img: "https://play.nintendo.com/images/PLAY-4544-PSPS-DLCrelease_1x1_v01.a25bebd1.67f98f7b58b63e27.jpg"}] },
-            { title: "Pokémon Shield", category: "Pokémon Collection", price: 79.99, img: "https://assets.nintendo.com/image/upload/f_auto/q_auto/dpr_2.0/c_scale,w_600/ncom/en_US/games/switch/p/pokemon-shield-switch/hero", dlcs: [{ title: "Expansion Pass", price: 39.99, img: "https://play.nintendo.com/images/PLAY-4544-PSPS-DLCrelease_1x1_v01.a25bebd1.67f98f7b58b63e27.jpg"}] },
-            { title: "Bloons TD 6", category: "Puzzle & Casual", price: 9.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/960090/library_600x900.jpg", dlcs: [{ title: "Rogue Legends", price: 5.49, img: "https://www.droidgamers.com/wp-content/uploads/2025/02/Bloons-TD-6-Rogue-Legends-DLC-1024x576.jpg"}, { title: "Frontier Legends", price: 5.49, img: "https://img.gg.deals/eb/de/911a2572c18652f92ffd897d3ad4df1babb4_1232xr706_Q100.jpg"}] },
-            { title: "Cattails", category: "Puzzle & Casual", price: 14.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/634160/library_600x900.jpg", dlcs: [{ title: "Deluxe Content", price: 6.99, img: "https://cattailsgame.com/1/img/simplebanner.jpg"}] },
-            { title: "Mario Kart 8 Deluxe", category: "Puzzle & Casual", price: 79.99, rarity: "legendary", img: "https://assets.nintendo.com/image/upload/f_auto/q_auto/dpr_2.0/c_scale,w_600/ncom/en_US/games/switch/m/mario-kart-8-deluxe-switch/hero", dlcs: [{ title: "Booster Course Pass", price: 32.99, img: "https://nintendoeverything.com/wp-content/uploads/mario-kart-8-deluxe-booster-course-pass-dlc.jpg"}] },
-            { title: "Placid Plastic Duck Simulator", category: "Puzzle & Casual", price: 2.50, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1999360/library_600x900.jpg", dlcs: [{ title: "Duck Addiction", side: 'left', img: "https://www.gamepretty.com/wp-content/uploads/2023/02/unnamed-file-628.jpg" }, { title: "Ducks Galore", side: 'left', img: "https://www.trueachievements.com/gameimage/199642_0.jpg" }, { title: "Ducks, Please", side: 'left', img: "https://gamepretty.com/wp-content/uploads/2023/10/unnamed-file-408.jpg" }, { title: "Hippospace", side: 'left', img: "https://fandom.placid-plastic-duck-simulator.com/wp-content/uploads/2023/09/CAPSULE_MID.png" }, { title: "Quacking Ice", img: "https://gpstatic.com/acache/61/23/2/us/packshot-736de393a4d425a236dd4d5d8fd58bb8.jpg" }, { title: "Rooftop", img: "https://fandom.placid-plastic-duck-simulator.com/wp-content/uploads/2024/09/1000023429-scaled.jpg" }, { title: "So Many Ducks", img: "https://img.gg.deals/aa/fb/04a99191c0dd25072cbabf091f25d8531e59_1920xt1080_S1000.jpg" }, { title: "Virtual Thermae", img: "https://img.gg.deals/8d/39/dc51402f236dda2b03da8935142f75ec682a_1920xt1080_S1000.jpg" }] },
-            { title: "Assetto Corsa", category: "Racing & Sandbox", price: 22.79, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/244210/library_600x900.jpg", dlcs: [{ title: "Dream Pack 1", img: "https://cdn-products.eneba.com/resized-products/WaHBHye_350x200_1x-0.jpg", side: 'left' }, { title: "Dream Pack 2", img: "https://en.mmoga.net/images/games/_ext/1127695/assetto-corsa-dream-pack-2-dlc_large.png", side: 'left' }, { title: "Dream Pack 3", img: "https://s.pacn.ws/360/w5/assetto-corsa-dream-pack-3-dlc-578601.10.jpg?qpmvyf", side: 'left' }, { title: "Ferrari Pack", img: "https://www.mobygames.com/images/covers/l/623751-assetto-corsa-ferrari-70th-anniversary-celebration-pack-xbox-one-front-cover.png", side: 'left' }, { title: "Japanese Pack", img: "https://cdn.akamai.steamstatic.com/steam/apps/467980/ss_95419d0128381470c1e54d83d392c652a0244e43.1920x1080.jpg?t=1463593828", side: 'left' }, { title: "DP6", img: "https://cdn.mobygames.com/covers/10802155-assetto-corsa-competizione-intercontinental-gt-pack-dlc-xbox-one.jpg", side: 'left' }, { title: "Porsche I", img: "https://cdn.gameboost.com/igdb/covers/156162/co8gw9.jpg" }, { title: "Porsche II", img: "https://cdn.gameboost.com/igdb/covers/156162/co8gw9.jpg" }, { title: "Porsche III", img: "https://playerkeys.com/media/content/0/1753/assetto-corsa-porsche-pack-iii-dlc.jpg" }, { title: "Red Pack", img: "https://image.api.playstation.com/cdn/UP4040/CUSA01830_00/2Ic7qKbcsBodMi13ui7iSX0mo1pHsweu.png" }, { title: "Ready to Race", img: "https://image.api.playstation.com/cdn/UP4040/CUSA01830_00/FREE_CONTENT61E9UBUKtVNEonp4WvoC/PREVIEW_SCREENSHOT7_154555.jpg" }] },
-            { title: "Forza Horizon 4", category: "Racing & Sandbox", price: 69.99, rarity: "legendary", img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1293830/library_600x900.jpg", dlcs: [{ title: "Hot Wheels", price: 12.99, img: "https://wallpapercave.com/wp/wp11314299.jpg" }, { title: "Treasure Map", price: 3.99, img: "https://cdn.mos.cms.futurecdn.net/r9zbDxerNubtb3xMxPCsPA-1200-80.jpg" }] },
-            { title: "Forza Horizon 5", category: "Racing & Sandbox", price: 69.99, rarity: "legendary", img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1551360/library_600x900.jpg", dlcs: [{ title: "American Automotive", price: 12.99, img: "https://cdn.forza.net/strapi-uploads/assets/xlarge_AA_Final_4k_5358ba9e1c.png" }, { title: "Italian Exotics", price: 12.99, img: "https://global.discourse-cdn.com/forza/original/4X/3/b/a/3ba01624e4f11259ba6952253ed70ae32131db72.jpeg" }, { title: "Fast X Car Pack", price: 9.99, img: "https://img.gg.deals/e4/5d/5affdf7921801b3f81923fa139a246e0589d_1920xt1080_S1000.jpg" }] },
-            { title: "The Sims 4", category: "Other", price: 0.00, rarity: "legendary", img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1222670/library_600x900.jpg", dlcs: [{ title: "All DLCs Owned", price: 0.00, img: "https://epicnpc-cdn.com/s3/xf/internal_data/attachments/3323/3323216-7e94dfa99b09596eb7a1f9f01da5bd75.png"}] },
-            { title: "Hatsune Miku: Mega Mix+", category: "Other", price: 32.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1761390/library_600x900.jpg", dlcs: [{ title: "Extra Songs Pack", price: 15.00, img: "https://gamepretty.com/wp-content/uploads/2022/05/capsule_616x353-2022-05-27T150006.074.jpg"}] },
-            
+<div class="controls">
+    <button id="f-all" class="active" onclick="setFilter('all')">All</button>
+    <button id="f-caught" onclick="setFilter('caught')">Caught</button>
+    <button id="f-uncaught" onclick="setFilter('uncaught')">Uncaught</button>
+    <div style="width: 2px; height: 20px; background: var(--border); margin: 0 5px;"></div>
+    <button onclick="toggleAll(true)">Expand All</button>
+    <button onclick="toggleAll(false)">Collapse All</button>
+</div>
 
-            // Nintendo / Platformer / Roguelike additions
-            { title: "Geometry Dash", category: "Nintendo / Platformer", price: 4.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/322170/library_600x900.jpg" },
-            { title: "Super Mario Bros. U Deluxe", category: "Nintendo / Platformer", price: 79.99, img: "https://placehold.co/600x900/d63b1f/white?text=NSMBU+Deluxe" },
-            { title: "Super Mario Maker 2", category: "Nintendo / Platformer", price: 79.99, img: "https://placehold.co/600x900/e8b000/white?text=Mario+Maker+2" },
+<div id="dex" class="dex-container"></div>
 
-            // Pokémon additions
-            { title: "Pokémon Legends: Arceus", category: "Pokémon Collection", price: 79.99, img: "https://assets.nintendo.com/image/upload/f_auto/q_auto/dpr_2.0/c_scale,w_600/ncom/en_US/games/switch/p/pokemon-legends-arceus-switch/hero", zoomFix: true },
-            { title: "Pokémon Let's Go, Eevee!", category: "Pokémon Collection", price: 79.99, img: "https://assets.nintendo.com/image/upload/f_auto/q_auto/dpr_2.0/c_scale,w_600/ncom/en_US/games/switch/p/pokemon-lets-go-eevee-switch/hero", zoomFix: true },
-            { title: "Pokémon Pearl", category: "Pokémon Collection", price: 79.99, img: "https://assets.nintendo.com/image/upload/f_auto/q_auto/dpr_2.0/c_scale,w_600/ncom/en_US/games/switch/p/pokemon-brilliant-diamond-switch/hero", zoomFix: true },
+<!-- Detail Panel -->
+<div id="detail-overlay" onclick="closeDetailPanel()"></div>
+<div id="detail-panel">
+    <div id="detail-tab-ear" onclick="closeDetailPanel()">✕ Close</div>
+    <div id="detail-panel-header">
+        <img id="detail-panel-sprite" src="" alt="">
+        <div id="detail-panel-title">
+            <h2 id="detail-name">—</h2>
+            <div class="detail-dex-num" id="detail-entry-num">Entry #—</div>
+        </div>
+        <button id="detail-close-btn" onclick="closeDetailPanel()">✕</button>
+    </div>
+    <div id="detail-panel-body">
+        <div class="detail-section-divider">Info</div>
 
-            // Puzzle, Casual & Party additions
-            { title: "Aperture Desk Job", category: "Puzzle & Casual", price: 0.00, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1902490/library_600x900.jpg" },
-            { title: "Cat Goes Fishing", category: "Puzzle & Casual", price: 9.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/289700/library_600x900.jpg" },
-            { title: "Cookie Clicker", category: "Puzzle & Casual", price: 7.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1454400/library_600x900.jpg" },
-            { title: "Keep Talking and Nobody Explodes", category: "Puzzle & Casual", price: 18.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/341800/library_600x900.jpg" },
-            { title: "Mario Kart World", category: "Puzzle & Casual", price: 89.99, rarity: "legendary", img: "https://placehold.co/600x900/e00/white?text=Mario+Kart+World" },
-            { title: "Mini Metro", category: "Puzzle & Casual", price: 14.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/287980/library_600x900.jpg" },
-            { title: "Mini Motorways", category: "Puzzle & Casual", price: 14.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1127500/library_600x900.jpg" },
-            { title: "OMORI", category: "Puzzle & Casual", price: 22.99, rarity: "legendary", img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1150690/library_600x900.jpg" },
-            { title: "Stardew Valley", category: "Puzzle & Casual", price: 19.99, rarity: "legendary", img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/413150/library_600x900.jpg" },
-            { title: "Super Mario Party", category: "Puzzle & Casual", price: 79.99, img: "https://assets.nintendo.com/image/upload/f_auto/q_auto/dpr_2.0/c_scale,w_600/ncom/en_US/games/switch/s/super-mario-party-switch/hero", zoomFix: true },
-            { title: "Townscaper", category: "Puzzle & Casual", price: 7.79, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1291340/library_600x900.jpg" },
-            { title: "Turmoil", category: "Puzzle & Casual", price: 12.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/361280/library_600x900.jpg", dlcs: [{ title: "The Heat Is On", price: 6.99, img: "https://files.peakd.com/file/peakd-hive/enjar/23yTeyL3CbKLhe2gprJW3PiisMuMQKoexzCw7Ybjxcn7jbhuCuHruRbsH1iPVquzgvV53.jpg" }] },
-            { title: "Wobbledogs", category: "Puzzle & Casual", price: 18.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/1424330/library_600x900.jpg" },
+        <div class="detail-row">
+            <div class="detail-row-label">Gender</div>
+            <div class="detail-row-value detail-placeholder" id="dp-gender">Not set</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-row-label">Origin Game</div>
+            <div class="detail-row-value detail-placeholder" id="dp-origin">Not set</div>
+        </div>
 
-            // Racing & Sandbox additions
-            { title: "Garry's Mod", category: "Racing & Sandbox", price: 12.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/4000/library_600x900.jpg" },
-            { title: "People Playground", category: "Racing & Sandbox", price: 9.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/841090/library_600x900.jpg" },
-            { title: "Scrap Mechanic", category: "Racing & Sandbox", price: 27.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/387990/library_600x900.jpg" },
-            { title: "Terraria", category: "Racing & Sandbox", price: 13.99, rarity: "legendary", img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/105600/library_600x900.jpg" },
+        <div class="detail-row alpha-row" id="dp-alpha-row">
+            <div class="detail-row-label">Alpha Status</div>
+            <div class="detail-row-value detail-placeholder" id="dp-alpha">Not set</div>
+        </div>
 
-            // VR Collection
-            { title: "Elven Assassin", category: "VR Collection", price: 22.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/503800/library_600x900.jpg", dlcs: [{ title: "Added Map DLC", price: 4.99, img: "https://img.gg.deals/18/98/c00c06b8cea906b827af8a0b138ebeaed2bd_1920xt1080_S1000.jpg" }] },
-            { title: "Job Simulator", category: "VR Collection", price: 22.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/448280/library_600x900.jpg" },
-            { title: "Please, Don't Touch Anything VR", category: "VR Collection", price: 12.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/568830/library_600x900.jpg" },
-            { title: "Thief Simulator VR", category: "VR Collection", price: 22.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/978410/library_600x900.jpg" },
+        <div class="detail-section-divider">Hunt</div>
 
-            // Management & Simulation additions
-            { title: "Supermarket Together", category: "Management & Simulation", price: 13.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/2689810/library_600x900.jpg" },
+        <div class="detail-row">
+            <div class="detail-row-label">Encounters</div>
+            <div class="detail-row-value detail-placeholder" id="dp-encounters">Not set</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-row-label">Obtained Date</div>
+            <div class="detail-row-value detail-placeholder" id="dp-date">Not set</div>
+        </div>
+    </div>
+</div>
 
-            // Minecraft Collection additions
-            { title: "Minecraft: Nintendo Switch Edition", category: "Minecraft Collection", price: 39.99, rarity: "legendary", img: "https://placehold.co/600x900/226622/white?text=MC+Switch" },
-            { title: "Minecraft: Pocket Edition", category: "Minecraft Collection", price: 9.99, img: "https://placehold.co/600x900/226622/white?text=MC+Pocket" },
-            { title: "Minecraft Legends: Deluxe Edition", category: "Minecraft Collection", price: 44.99, img: "https://placehold.co/600x900/3d2b5e/white?text=MC+Legends" },
+<script>
+const rawList = `Bulbasaur
+Ivysaur
+Venusaur M
+Venusaur F
+Charmander
+Charmeleon
+Charizard
+Squirtle
+Wartortle
+Blastoise
+Caterpie
+Metapod
+Butterfree M
+Butterfree F
+Weedle
+Kakuna
+Beedrill
+Pidgey
+Pidgeotto
+Pidgeot
+Rattata M
+Rattata F
+Rattata A
+Raticate M
+Raticate F
+Raticate A
+Spearow
+Fearow
+Ekans
+Arbok
+Pikachu M
+Pikachu F
+Raichu M
+Raichu F
+Raichu A
+Sandshrew
+Sandshrew A
+Sandslash
+Sandslash A
+Nidoran F
+Nidorina
+Nidoqueen
+Nidoran M
+Nidorino
+Nidoking
+Clefairy
+Clefable
+Vulpix
+Vulpix A
+Ninetales
+Ninetales A
+Jigglypuff
+Wigglytuff
+Zubat M
+Zubat F
+Golbat M
+Golbat F
+Oddish
+Gloom M
+Gloom F
+Vileplume M
+Vileplume F
+Paras
+Parasect
+Venonat
+Venomoth
+Diglett
+Diglett A
+Dugtrio
+Dugtrio A
+Meowth
+Meowth A
+Meowth G
+Persian
+Persian A
+Psyduck
+Golduck
+Mankey
+Primeape
+Growlithe
+Growlithe H
+Arcanine
+Arcanine H
+Poliwag
+Poliwhirl
+Poliwrath
+Abra
+Kadabra M
+Kadabra F
+Alakazam M
+Alakazam F
+Machop
+Machoke
+Machamp
+Bellsprout
+Weepinbell
+Victreebel
+Tentacool
+Tentacruel
+Geodude
+Geodude A
+Graveler
+Graveler A
+Golem
+Golem A
+Ponyta
+Ponyta G
+Rapidash
+Rapidash G
+Slowpoke
+Slowpoke G
+Slowbro
+Slowbro G
+Magnemite
+Magneton
+Farfetch'd
+Farfetch'd G
+Doduo M
+Doduo F
+Dodrio M
+Dodrio F
+Seel
+Dewgong
+Grimer
+Grimer A
+Muk
+Muk A
+Shellder
+Cloyster
+Gastly
+Haunter
+Gengar
+Onix
+Drowzee
+Hypno M
+Hypno F
+Krabby
+Kingler
+Voltorb
+Voltorb H
+Electrode
+Electrode H
+Exeggcute
+Exeggutor
+Exeggutor A
+Cubone
+Marowak
+Marowak A
+Hitmonlee
+Hitmonchan
+Lickitung
+Koffing
+Weezing
+Weezing G
+Rhyhorn M
+Rhyhorn F
+Rhydon M
+Rhydon F
+Chansey
+Tangela
+Kangaskhan
+Horsea
+Seadra
+Goldeen M
+Goldeen F
+Seaking M
+Seaking F
+Staryu
+Starmie
+Mr. Mime
+Mr. Mime G
+Scyther M
+Scyther F
+Jynx
+Electabuzz
+Magmar
+Pinsir
+Tauros
+Tauros P - Combat Form
+Tauros P - Blaze Form
+Tauros P - Aqua Form
+Magikarp M
+Magikarp F
+Gyarados M
+Gyarados F
+Lapras
+Ditto
+Eevee M
+Eevee F
+Vaporeon
+Jolteon
+Flareon
+Porygon
+Omanyte
+Omastar
+Kabuto
+Kabutops
+Aerodactyl
+Snorlax
+Articuno
+Zapdos
+Moltres
+Dratini
+Dragonair
+Dragonite
+Mewtwo
+Mew
+Chikorita
+Bayleef
+Meganium M
+Meganium F
+Cyndaquil
+Quilava
+Typhlosion
+Typhlosion H
+Totodile
+Croconaw
+Feraligatr
+Sentret
+Furret
+Hoothoot
+Noctowl
+Ledyba M
+Ledyba F
+Ledian M
+Ledian F
+Spinarak
+Ariados
+Crobat
+Chinchou
+Lanturn
+Pichu
+Cleffa
+Igglypuff
+Togepi
+Togetic
+Natu
+Xatu M
+Xatu F
+Mareep
+Flaaffy
+Ampharos
+Bellossom
+Marill
+Azumarill
+Sudowoodo M
+Sudowoodo F
+Politoed M
+Politoed F
+Hoppip
+Skiploom
+Jumpluff
+Aipom M
+Aipom F
+Sunkern
+Sunflora
+Yanma
+Wooper M
+Wooper F
+Wooper P
+Quagsire M
+Quagsire F
+Espeon
+Umbreon
+Murkrow M
+Murkrow F
+Slowking
+Slowking G
+Misdreavus
+Unown A
+Unown B
+Unown C
+Unown D
+Unown E
+Unown F
+Unown G
+Unown H
+Unown I
+Unown J
+Unown K
+Unown L
+Unown M
+Unown N
+Unown O
+Unown P
+Unown Q
+Unown R
+Unown S
+Unown T
+Unown U
+Unown V
+Unown W
+Unown X
+Unown Y
+Unown Z
+Unown !
+Unown ?
+Wobbuffet M
+Wobbuffet F
+Girafarig M
+Girafarig F
+Pineco
+Forretress
+Dunsparce
+Gligar M
+Gligar F
+Steelix M
+Steelix F
+Snubbull
+Granbull
+Qwilfish
+Qwilfish H
+Scizor M
+Scizor F
+Shuckle
+Heracross M
+Heracross F
+Sneasel M
+Sneasel F
+Sneasel H - M
+Sneasel H - F
+Teddiursa
+Ursaring M
+Ursaring F
+Slugma
+Magcargo
+Swinub
+Piloswine M
+Piloswine F
+Corsola
+Corsola G
+Remoraid
+Octillery M
+Octillery F
+Delibird
+Mantine
+Skarmory
+Houndour
+Houndoom M
+Houndoom F
+Kingdra
+Phanpy
+Donphan M
+Donphan F
+Porygon2
+Stantler
+Smeargle
+Tyrogue
+Hitmontop
+Smoochum
+Elekid
+Magby
+Miltank
+Blissey
+Raikou
+Entei
+Suicune
+Larvitar
+Pupitar
+Tyranitar
+Lugia
+Ho-Oh
+Celebi
+Treecko
+Grovyle
+Sceptile
+Torchic M
+Torchic F
+Combusken M
+Combusken F
+Blaziken M
+Blaziken F
+Mudkip
+Marshtomp
+Swampert
+Poochyena
+Mightyena
+Zigzagoon
+Zigzagoon G
+Linoone
+Linoone G
+Wurmple
+Silcoon
+Beautifly M
+Beautifly F
+Cascoon
+Dustox M
+Dustox F
+Lotad
+Lombre
+Ludicolo M
+Ludicolo F
+Seedot
+Nuzleaf M
+Nuzleaf F
+Shiftry M
+Shiftry F
+Taillow
+Swellow
+Wingull
+Pelipper
+Ralts
+Kirlia
+Gardevoir
+Surskit
+Masquerain
+Shroomish
+Breloom
+Slakoth
+Vigoroth
+Slaking
+Nincada
+Ninjask
+Shedinja
+Whismur
+Loudred
+Exploud
+Makuhita
+Hariyama
+Azurill
+Nosepass
+Skitty
+Delcatty
+Sableye
+Mawile
+Aron
+Lairon
+Aggron
+Meditite M
+Meditite F
+Medicham M
+Medicham F
+Electrike
+Manectric
+Plusle
+Minun
+Volbeat
+Illumise
+Roselia M
+Roselia F
+Gulpin M
+Gulpin F
+Swalot M
+Swalot F
+Carvanha
+Sharpedo
+Wailmer
+Wailord
+Numel M
+Numel F
+Camerupt M
+Camerupt F
+Torkoal
+Spoink
+Grumpig
+Spinda
+Trapinch
+Vibrava
+Flygon
+Cacnea
+Cacturne M
+Cacturne F
+Swablu
+Altaria
+Zangoose
+Seviper
+Lunatone
+Solrock
+Barboach
+Whiscash
+Corphish
+Crawdaunt
+Baltoy
+Claydol
+Lileep
+Cradily
+Anorith
+Armaldo
+Feebas
+Milotic M
+Milotic F
+Castform
+Castform Sunny
+Castform Rainy
+Castform Windy
+Kecleon
+Shuppet
+Banette
+Duskull
+Dusclops
+Tropius
+Chimecho
+Absol
+Wynaut
+Snorunt
+Glalie
+Spheal
+Sealeo
+Walrein
+Clamperl
+Huntail
+Gorebyss
+Relicanth M
+Relicanth F
+Luvdisc
+Bagon
+Shelgon
+Salamence
+Beldum
+Metang
+Metagross
+Regirock
+Regice
+Registeel
+Latias
+Latios
+Kyogre
+Groudon
+Rayquaza
+Jirachi
+Deoxys
+Deoxys Attack
+Deoxys Defense
+Deoxys Speed
+Turtwig
+Grotle
+Torterra
+Chimchar
+Monferno
+Infernape
+Piplup
+Prinplup
+Empoleon
+Starly M
+Starly F
+Staravia M
+Staravia F
+Staraptor M
+Staraptor F
+Bidoof M
+Bidoof F
+Bibarel M
+Bibarel F
+Kricketot M
+Kricketot F
+Kricketune M
+Kricketune F
+Shinx M
+Shinx F
+Luxio M
+Luxio F
+Luxray M
+Luxray F
+Budew
+Roserade M
+Roserade F
+Cranidos
+Rampardos
+Shieldon
+Bastidon
+Burmy
+Burmy Sand
+Burmy Trash
+Wormadan
+Wormadan Sand
+Wormadan Trash
+Mothim
+Combee M
+Combee F
+Vespiquen
+Pachirisu M
+Pachirisu F
+Buizel M
+Buizel F
+Floatzel M
+Floatzel F
+Cherubi
+Cherrim
+Shellos West
+Shellos East
+Gastrodon West
+Gastrodon East
+Ambipom M
+Ambipom F
+Drifloon
+Drifblim
+Buneary
+Lopunny
+Mismagius
+Honchkrow
+Glameow
+Purugly
+Chingling
+Stunky
+Skuntank
+Bronzor
+Bronzong
+Bonsly
+Mime Jr.
+Happiny
+Chatot
+Spiritomb
+Gible M
+Gible F
+Gabite M
+Gabite F
+Garchomp M
+Garchomp F
+Munchlax
+Riolu
+Lucario
+Hippopotas M
+Hippopotas F
+Hippowdon M
+Hippowdon F
+Skorupi
+Drapion
+Croagunk M
+Croagunk F
+Toxicroak M
+Toxicroak F
+Carnivine
+Finneon M
+Finneon F
+Lumineon M
+Lumineon F
+Mantyke
+Snover M
+Snover F
+Abomasnow M
+Abomasnow F
+Weavile M
+Weavile F
+Magnezone
+Lickilicky
+Rhyperior M
+Rhyperior F
+Tangrowth M
+Tangrowth F
+Electivire
+Magmortar
+Togekiss
+Yanmega
+Leafeon
+Glaceon
+Gliscor
+Mamoswine M
+Mamoswine F
+Porygon-Z
+Gallade
+Probopass
+Dusknoir
+Froslass
+Rotom
+Rotom Heat
+Rotom Wash
+Rotom Frost
+Rotom Fan
+Rotom Mow
+Uxie
+Mesprit
+Azelf
+Dialga
+Palkia
+Heatran
+Regigigas
+Giratina
+Cresselia
+Phione
+Manaphy
+Darkrai
+Shaymin
+Arceus
+Snivy
+Servine
+Serperior
+Tepig
+Pignite
+Emboar
+Oshawott
+Dewott
+Samurott
+Samurott H
+Patrat
+Watchog
+Lillipup
+Herdier
+Stoutland
+Purrloin
+Liepard
+Pansage
+Simisage
+Pansear
+Simisear
+Panpour
+Simipour
+Munna
+Musharna
+Pidove
+Tranquill
+Unfezant M
+Unfezant F
+Blitzle
+Zebstrika
+Roggenrola
+Boldore
+Gigalith
+Woobat
+Swoobat
+Drilbur
+Excadrill
+Audino
+Timburr
+Gurdurr
+Conkeldurr
+Tympole
+Palpitoad
+Seismitoad
+Throh
+Sawk
+Sewaddle
+Swadloon
+Leavanny
+Venipede
+Whirlipede
+Scolipede
+Cottonee
+Whimsicott
+Petilil
+Lilligant
+Lilligant H
+Basculin Red
+Basculin Blue
+Basculin White
+Sandile
+Krokorok
+Krookodile
+Darumaka
+Darumaka G
+Darmanitan
+Darmanitan G
+Maracactus
+Dwebble
+Crustle
+Scraggy
+Scrafty
+Sigilyph
+Yamask
+Yamask G
+Cofagrigus
+Tirtouga
+Carracosta
+Archen
+Archeops
+Trubbish
+Garbodor
+Zorua
+Zorua H
+Zoroark
+Zoroark H
+Minccino
+Cinccino
+Gothita
+Gothorita
+Gothitelle
+Solosis
+Duosion
+Reuniclus
+Ducklett
+Swanna
+Vanillite
+Vanillish
+Vanilluxe
+Deerling Spring
+Deerling Summer
+Deerling Autumn
+Deerling Winter
+Sawsbuck Spring
+Sawsbuck Summer
+Sawsbuck Autumn
+Sawsbuck Winter
+Emolga
+Karrablast
+Escavalier
+Foongus
+Amoonguss
+Frillish M
+Frillish F
+Jellicent M
+Jellicent F
+Alomomola
+Joltik
+Galvantula
+Ferroseed
+Ferrothorn
+Klink
+Klang
+Klinklang
+Tynamo
+Eelektrik
+Eelektross
+Elgyem
+Beheeyem
+Litwick
+Lampent
+Chandelure
+Axew
+Fraxure
+Haxorus
+Cubchoo
+Beartic
+Cryogonal
+Shelmet
+Accelgor
+Stunfisk
+Stunfisk G
+Mienfoo
+Mienshao
+Druddigon
+Golett
+Golurk
+Pawniard
+Bisharp
+Bouffalant
+Rufflet
+Braviary
+Braviary G
+Vullaby
+Mandibuzz
+Heatmor
+Durant
+Deino
+Zweilous
+Hydreigon
+Larvesta
+Volcarona
+Cobalion
+Terrakion
+Virizion
+Tornadus Incarnate
+Tornadus Therian
+Thundurus Incarnate
+Thundurus Therian
+Reshiram
+Zekrom
+Landorus Incarnate
+Landorus Therian
+Kyurem
+Chespin
+Quilladin
+Chesnaught
+Fennekin
+Braixen
+Delphox
+Froakie
+Frogadier
+Greninja
+Bunnelby
+Diggersby
+Fletchling
+Fletchinder
+Talonflame
+Scatterbug
+Spewpa
+Vivillon - Icy Snow
+Vivillon - Polar
+Vivillon - Tundra
+Vivillon - Continental
+Vivillon - Garden
+Vivillon - Elegant
+Vivillon - Meadow
+Vivillon - Modern
+Vivillon - Marine
+Vivillon - Archipelago
+Vivillon - High Plains
+Vivillon - Sandstorm
+Vivillon - River
+Vivillon - Monsoon
+Vivillon - Savanna
+Vivillon - Sun
+Vivillon - Ocean
+Vivillon - Jungle
+Vivillon - Fancy
+Litleo
+Pyroar M
+Pyroar F
+Flabébé - Red
+Flabébé - Yellow
+Flabébé - Orange
+Flabébé - Blue
+Flabébé - White
+Floette - Red
+Floette - Yellow
+Floette - Orange
+Floette - Blue
+Floette - White
+Florges - Red
+Florges - Yellow
+Florges - Orange
+Florges - Blue
+Florges - White
+Skiddo
+Gogoat
+Pancham
+Pangoro
+Furfrou
+Furfrou - Heart
+Furfrou - Star
+Furfrou - Diamond
+Furfrou - Debutante
+Furfrou - Matron
+Furfrou - Dandy
+Furfrou - La Reine
+Furfrou - Kabuki
+Furfrou - Pharoah
+Espurr
+Meowstic M
+Meowstic F
+Honedge
+Doublade
+Aegislash
+Spritzee
+Aromatisse
+Swirlix
+Slurpuff
+Inkay
+Malamar
+Binacle
+Barbaracle
+Skrelp
+Dragalge
+Clauncher
+Clawitzer
+Helioptile
+Heliolisk
+Tyrunt
+Tyrantrum
+Amaura
+Aurorus
+Sylveon
+Hawlucha
+Dedenne
+Carbink
+Goomy
+Sliggoo
+Sliggoo H
+Goodra
+Goodra H
+Klefki
+Phantump
+Trevenant
+Pumpkaboo - Small
+Pumpkaboo - Normal
+Pumpkaboo - Large
+Pumpkaboo - Super
+Gourgeist - Small
+Gourgeist - Normal
+Gourgeist - Large
+Gourgeist - Super
+Bergmite
+Avalugg
+Avalugg H
+Noibat
+Noivern
+Xerneas
+Yveltal
+Zygarde - 10%
+Zygarde - 50%
+Rowlet
+Dartrix
+Decidueye
+Decidueye H
+Litten
+Torracat
+Incineroar
+Popplio
+Brionne
+Primarina
+Pikipek
+Trumbeak
+Toucannon
+Yungoos
+Gumshoos
+Grubbin
+Charjabug
+Vikavolt
+Crabrawler
+Crabominable
+Oricorio
+Oricorio - Pompom
+Oricorio - Pa'u
+Oricorio - Sensu
+Cutiefly
+Ribombee
+Rockruff
+Lycanroc - Day
+Lycanroc - Dusk
+Lycanroc - Night
+Wishiwashi
+Mareanie
+Toxapex
+Mudbray
+Mudsdale
+Dewpider
+Araquanid
+Fomantis
+Lurantis
+Morelull
+Shiinotic
+Salandit
+Salazzle
+Stufful
+Bewear
+Bounsweet
+Steenee
+Tsareena
+Comfey
+Oranguru
+Passimian
+Wimpod
+Golisopod
+Sandygast
+Palossand
+Pyukumuku
+Type: Null
+Silvally
+Minior - Red
+Minior - Orange
+Minior - Yellow
+Minior - Green
+Minior - Blue
+Minior - Indigo
+Minior - Violet
+Komala
+Turtonator
+Togedemaru
+Mimikyu
+Bruxish
+Drampa
+Dhelmise
+Jangmo-o
+Hakamo-o
+Kommo-o
+Tapu Koko
+Tapu Lele
+Tapu Bulu
+Tapu Fini
+Solgaleo
+Lunala
+Nihilego
+Buzzwole
+Pheromosa
+Xurkitree
+Celesteela
+Kartana
+Guzzlord
+Necrozma
+Poipole
+Naganadel
+Stakataka
+Blacephalon
+Meltan
+Melmetal
+Grookey
+Thwackey
+Rillaboom
+Scorbunny
+Raboot
+Cinderace
+Sobble
+Drizzile
+Inteleon
+Skwovet
+Greedent
+Rookidee
+Corvisquire
+Corviknight
+Blipbug
+Dottler
+Orbeetle
+Nickit
+Thievul
+Gossifleur
+Eldegoss
+Wooloo
+Dubwool
+Chewtle
+Drednaw
+Yamper
+Boltund
+Rolycoly
+Carkol
+Coalossal
+Applin
+Flapple
+Appletun
+Silicobra
+Sandaconda
+Cramorant
+Arrokuda
+Barraskewda
+Toxel
+Toxtricity - Amped
+Toxtricity - Low Key
+Sizzlipede
+Centiskorch
+Clobbopus
+Grapploct
+Sinistea - Phony
+Sinistea - Authentic
+Polteageist - Phony
+Polteageist - Authentic
+Hatenna
+Hattrem
+Hatterene
+Impidimp
+Morgrem
+Grimmsnarl
+Obstagoon
+Perrserker
+Cursola
+Sirfetch'd
+Mr. Rime
+Runerigus
+Milcery
+Alcremie - Vanilla Cream Strawberry Sweet
+Alcremie - Vanilla Cream Berry Sweet
+Alcremie - Vanilla Cream Love Sweet
+Alcremie - Vanilla Cream Star Sweet
+Alcremie - Vanilla Cream Clover Sweet
+Alcremie - Vanilla Cream Flower Sweet
+Alcremie - Vanilla Cream Ribbon Sweet
+Alcremie - Ruby Cream Strawberry Sweet
+Alcremie - Ruby Cream Berry Sweet
+Alcremie - Ruby Cream Love Sweet
+Alcremie - Ruby Cream Star Sweet
+Alcremie - Ruby Cream Clover Sweet
+Alcremie - Ruby Cream Flower Sweet
+Alcremie - Ruby Cream Ribbon Sweet
+Alcremie - Matcha Cream Strawberry Sweet
+Alcremie - Matcha Cream Berry Sweet
+Alcremie - Matcha Cream Love Sweet
+Alcremie - Matcha Cream Star Sweet
+Alcremie - Matcha Cream Clover Sweet
+Alcremie - Matcha Cream Flower Sweet
+Alcremie - Matcha Cream Ribbon Sweet
+Alcremie - Mint Cream Strawberry Sweet
+Alcremie - Mint Cream Berry Sweet
+Alcremie - Mint Cream Love Sweet
+Alcremie - Mint Cream Star Sweet
+Alcremie - Mint Cream Clover Sweet
+Alcremie - Mint Cream Flower Sweet
+Alcremie - Mint Cream Ribbon Sweet
+Alcremie - Lemon Cream Strawberry Sweet
+Alcremie - Lemon Cream Berry Sweet
+Alcremie - Lemon Cream Love Sweet
+Alcremie - Lemon Cream Star Sweet
+Alcremie - Lemon Cream Clover Sweet
+Alcremie - Lemon Cream Flower Sweet
+Alcremie - Lemon Cream Ribbon Sweet
+Alcremie - Salted Cream Strawberry Sweet
+Alcremie - Salted Cream Berry Sweet
+Alcremie - Salted Cream Love Sweet
+Alcremie - Salted Cream Star Sweet
+Alcremie - Salted Cream Clover Sweet
+Alcremie - Salted Cream Flower Sweet
+Alcremie - Salted Cream Ribbon Sweet
+Alcremie - Ruby Swirl Strawberry Sweet
+Alcremie - Ruby Swirl Berry Sweet
+Alcremie - Ruby Swirl Love Sweet
+Alcremie - Ruby Swirl Star Sweet
+Alcremie - Ruby Swirl Clover Sweet
+Alcremie - Ruby Swirl Flower Sweet
+Alcremie - Ruby Swirl Ribbon Sweet
+Alcremie - Caramel Swirl Strawberry Sweet
+Alcremie - Caramel Swirl Berry Sweet
+Alcremie - Caramel Swirl Love Sweet
+Alcremie - Caramel Swirl Star Sweet
+Alcremie - Caramel Swirl Clover Sweet
+Alcremie - Caramel Swirl Flower Sweet
+Alcremie - Caramel Swirl Ribbon Sweet
+Alcremie - Rainbow Swirl Strawberry Sweet
+Alcremie - Rainbow Swirl Berry Sweet
+Alcremie - Rainbow Swirl Love Sweet
+Alcremie - Rainbow Swirl Star Sweet
+Alcremie - Rainbow Swirl Clover Sweet
+Alcremie - Rainbow Swirl Flower Sweet
+Alcremie - Rainbow Swirl Ribbon Sweet
+Falinks
+Pincurchin
+Snom
+Frosmoth
+Stonjourner
+Eiscue
+Indeedee M
+Indeedee F
+Morpeko
+Cufant
+Copperajah
+Dracozolt
+Arctozolt
+Dracovish
+Arctovish
+Duraludon
+Dreepy
+Drakloak
+Dragapult
+Regieleki
+Regidrago
+Wyrdeer
+Kleavor
+Ursaluna
+Basculegion M
+Basculegion F
+Sneasler
+Overqwil
+Sprigatito
+Floragato
+Meowscarada
+Fuecoco
+Crocalor
+Skeledirge
+Quaxly
+Quaxwell
+Quaquaval
+Lechonk
+Oinkologne - M
+Oinkologne - F
+Tarountula
+Spidops
+Nymble
+Lokix
+Pawmi
+Pawmo
+Pawmot
+Tandemaus
+Maushold - Family of four
+Maushold - Family of three
+Fidough
+Dachsbun
+Smoliv
+Dolliv
+Arboliva
+Squawkabilly - Green
+Squawkabilly - Blue
+Squawkabilly - Yellow
+Squawkabilly - White
+Nacli
+Naclstack
+Garganacl
+Charcadet
+Armarouge
+Ceruledge
+Tadbulb
+Bellibolt
+Wattrel
+Kilowattrel
+Maschiff
+Mabosstiff
+Shroodle
+Grafaiai
+Bramblin
+Brambleghast
+Toedscool
+Toedscruel
+Klawf
+Capsakid
+Scovillain
+Rellor
+Rabsca
+Flittle
+Espathra
+Tinkatink
+Tinkatuff
+Tinkaton
+Wiglett
+Wugtrio
+Bombirdier
+Finizen
+Palafin
+Varoom
+Revavroom
+Cyclizar
+Orthworm
+Glimmet
+Glimmora
+Greavard
+Houndstone
+Flamigo
+Cetoddle
+Cetitan
+Veluza
+Dondozo
+Tatsugiri - Curly
+Tatsugiri - Droopy
+Tatsugiri - Stretchy
+Annihilape
+Clodsire
+Farigiraf
+Dudunsparce - two segment
+Dudunsparce - three segment
+Kingambit
+Great Tusk
+Scream Tail
+Brute Bonnet
+Flutter Mane
+Slither Wing
+Sandy Shocks
+Iron Treads
+Iron Bundle
+Iron Hands
+Iron Jugulis
+Iron Moth
+Iron Thorns
+Frigibax
+Arctibax
+Baxcalibur
+Gimmighoul
+Gholdengo
+Roaring Moon
+Iron Valiant
+Dipplin
+Poltchageist - Counterfeit
+Poltchageist - Artisan
+Sinistcha - Unremarkable
+Sinistcha - Masterpiece
+Archaludon
+Hydrapple`;
 
-            // Software & Other additions
-            { title: "Among Us", category: "Other", price: 5.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/945360/library_600x900.jpg" },
-            { title: "Aseprite", category: "Other", price: 22.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/431730/library_600x900.jpg" },
-            { title: "Discord Bot Builder", category: "Other", price: 9.99, img: "https://placehold.co/600x900/5865f2/white?text=Discord+Bot+Builder" },
-            { title: "Wallpaper Engine", category: "Other", price: 5.99, img: "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/431960/library_600x900.jpg" },
+// User's provided caught list plus the 87 newly added Pokemon
+const hardcodedCaught = [
+"Abra", "Aerodactyl", "Alakazam F", "Altaria", "Ampharos", "Arcanine", "Ariados", "Azumarill", "Banette", "Bayleef", "Beautifly F", "Beldum", "Bellossom", "Bellsprout", "Bibarel F", "Breloom", "Bronzong", "Bronzor", "Budew", "Buizel F", "Buizel M", "Carnivine", "Cascoon", "Chansey", "Chatot", "Chikorita", "Chimchar", "Cleffa", "Cloyster", "Corphish", "Cranidos", "Croagunk F", "Crobat", "Delibird", "Dewgong", "Ditto", "Dodrio F", "Doduo M", "Donphan F", "Dragonair", "Dratini", "Drifblim", "Dunsparce", "Dusclops", "Dusknoir", "Duskull", "Eevee M", "Electabuzz", "Electrode", "Electrode H", "Elekid", "Espeon", "Exeggcute", "Exeggutor", "Exeggutor A", "Finneon F", "Flaaffy", "Flareon", "Floatzel M", "Flygon", "Forretress", "Froslass", "Gabite F", "Gallade", "Garchomp M", "Gardevoir", "Gastly", "Geodude", "Gible F", "Giratina", "Glalie", "Glameow", "Gloom M", "Golbat F", "Golduck", "Golem", "Graveler", "Graveler A", "Grimer", "Grotle", "Growlithe", "Grumpig", "Gulpin F", "Gyarados F", "Gyarados M", "Happiny", "Haunter", "Heracross F", "Hippopotas M", "Hippowdon M", "Ho-Oh", "Honchkrow", "Hoothoot", "Hoppip", "Houndoom M", "Houndour", "Igglypuff", "Infernape", "Jigglypuff", "Jolteon", "Jumpluff", "Kadabra F", "Kirlia", "Koffing", "Kricketot F", "Kricketot M", "Kricketune M", "Lapras", "Larvitar", "Lickilicky", "Lickitung", "Linoone", "Lombre", "Lotad", "Lucario", "Ludicolo M", "Luvdisc", "Luxio M", "Luxray F", "Machamp", "Machoke", "Magcargo", "Magikarp M", "Magnemite", "Magneton", "Makuhita", "Mantine", "Mareep", "Marill", "Metagross", "Metang", "Monferno", "Mudkip", "Muk", "Munchlax", "Murkrow F", "Ninetales", "Noctowl", "Nosepass", "Octillery F", "Oddish", "Omastar", "Onix", "Paras", "Parasect", "Pichu", "Pikachu M", "Pineco", "Piplup", "Ponyta", "Poochyena", "Porygon", "Porygon-Z", "Porygon2", "Primeape", "Probopass", "Psyduck", "Pupitar", "Quagsire F", "Qwilfish", "Qwilfish H", "Raichu A", "Ralts", "Rampardos", "Rapidash", "Rayquaza", "Relicanth M", "Remoraid", "Rhydon F", "Riolu", "Roserade F", "Rotom", "Rotom Heat", "Rotom Wash", "Sableye", "Salamence", "Sandshrew", "Sandslash", "Scizor M", "Scyther F", "Sealeo", "Shellder", "Shellos West", "Shinx F", "Shinx M", "Shroomish", "Shuppet", "Skiploom", "Skorupi", "Skuntank", "Slakoth", "Slowbro", "Slowking", "Slowpoke", "Slugma", "Sneasel F", "Sneasel M", "Snorlax", "Snorunt", "Snover F", "Spinarak", "Spiritomb", "Spoink", "Stantler", "Staraptor F", "Staravia F", "Staravia M", "Starly F", "Starly M", "Starmie", "Steelix F", "Sudowoodo F", "Swalot M", "Swampert", "Tauros P - Combat Form", "Teddiursa", "Tepig", "Togetic", "Toxicroak F", "Tropius", "Turtwig", "Typhlosion H", "Tyranitar", "Umbreon", "Unown O", "Vaporeon", "Venomoth", "Venonat", "Vibrava", "Victreebel", "Vileplume M", "Voltorb", "Voltorb H", "Vulpix A", "Walrein", "Weavile M", "Weepinbell", "Wooper M", "Wurmple", "Zangoose", "Zigzagoon G", "Zubat F", "Zubat M", "Alcremie - Ruby Swirl Strawberry Sweet", "Appletun", "Applin", "Arctovish", "Arctozolt", "Armarouge", "Brambleghast", "Bramblin", "Capsakid", "Centiskorch", "Ceruledge", "Charcadet", "Chewtle", "Copperajah", "Corviknight", "Cufant", "Cursola", "Dracovish", "Dracozolt", "Drakloak", "Drednaw", "Eiscue", "Flapple", "Flittle", "Frosmoth", "Garganacl", "Gossifleur", "Grafaiai", "Grimmsnarl", "Grookey", "Impidimp", "Kilowattrel", "Klawf", "Kleavor", "Lechonk", "Lokix", "Mabosstiff", "Maschiff", "Milcery", "Morgrem", "Morpeko", "Mr. Rime", "Nymble", "Oinkologne - F", "Overqwil", "Pawmi", "Pawmo", "Rabsca", "Rellor", "Scovillain", "Shroodle", "Sinistea - Authentic", "Smoliv", "Sneasler", "Spidops", "Sprigatito", "Squawkabilly - Blue", "Stonjourner", "Tandemaus", "Tarountula", "Thwackey", "Toedscool", "Toedscruel", "Toxtricity - Amped", "Ursaluna", "Wattrel", "Wyrdeer", "Annihilape", "Arctibax", "Bombirdier", "Brute Bonnet", "Cetitan", "Cetoddle", "Clodsire", "Cyclizar", "Dondozo", "Dudunsparce - two segment", "Espathra", "Farigiraf", "Finizen", "Flamigo", "Flutter Mane", "Frigibax", "Gholdengo", "Gimmighoul", "Glimmora", "Great Tusk", "Greavard", "Iron Bundle", "Iron Hands", "Iron Jugulis", "Iron Moth", "Iron Thorns", "Iron Treads", "Iron Valiant", "Kingambit", "Orthworm", "Palafin", "Revavroom", "Roaring Moon", "Sandy Shocks", "Scream Tail", "Slither Wing", "Tatsugiri - Droopy", "Tinkaton", "Tinkatuff", "Varoom", "Veluza", "Wiglett", "Archaludon", "Dipplin", "Hydrapple",
 
-            // Hidden from Carousel, but included in Math
-            { title: "Stardew OST", price: 12.99, hidden: true },
-            { title: "UNDERTALE OST", price: 9.99, hidden: true },
-            { title: "Celeste OST", price: 9.99, hidden: true },
-            { title: "COTL OST", price: 12.99, hidden: true },
-            { title: "ONI OST", price: 12.99, hidden: true },
-            { title: "OMORI OST", price: 14.99, hidden: true },
-            { title: "Cattails OST", price: 6.99, hidden: true },
-            { title: "Wandering Village OST", price: 6.99, hidden: true }
-        ];
+"Amoonguss", "Araquanid", "Avalugg", "Avalugg H", "Bergmite", "Bisharp", "Braviary G", "Carbink", "Chandelure", "Charjabug", "Clawitzer", "Cofagrigus", "Comfey", "Crabominable", "Crabrawler", "Cutiefly", "Deerling Spring", "Delphox", "Dragalge", "Drampa", "Drilbur", "Espurr", "Excadrill", "Fletchinder", "Foongus", "Fraxure", "Frogadier", "Gogoat", "Goodra", "Goomy", "Greninja", "Hakamo-o", "Hawlucha", "Heliolisk", "Honedge", "Hydreigon", "Jangmo-o", "Lampent", "Lilligant", "Litleo", "Litwick", "Lunala", "Lurantis", "Melmetal", "Meltan", "Meowstic F", "Mienfoo", "Mimikyu", "Minior - Blue", "Mudbray", "Mudsdale", "Noibat", "Noivern", "Oranguru", "Oricorio", "Palossand", "Pancham", "Passimian", "Pawniard", "Petilil", "Primarina", "Pyroar F", "Ribombee", "Rockruff", "Rowlet", "Rufflet", "Salandit", "Samurott H", "Sandygast", "Sawsbuck Spring", "Skiddo", "Sliggoo", "Stakataka", "Stunfisk G", "Swoobat", "Tapu Koko", "Toucannon", "Trevenant", "Vikavolt", "Virizion", "Volcarona", "Wimpod", "Zoroark", "Zoroark H", "Zorua", "Zorua H", "Zweilous"
+];
 
-        const facts = [
-            "Abiotic Factor was a valentines gift from my boyfriend",
-            "Abiotic Factor was a game first introduced to me in it's early early beta",
-            "Anarcute is a game I was aware of for longer than most games I own",
-            "Bendy and the Ink machine is a game I know forwards and back, but have yet to play",
-            "Donkey Kong Bananza is one of 2 AAA games I own on nintendo hardware without a cartridge",
-            "Dredge Is one of my all time favorite games, gifted to me by my boyfriend for 2025 Christmas",
-            "Hollow Knight took me 20 hours to beat on my first playthrough, with cheats. I have since gotten much better at games",
-            "Silksong is a game I first didn't like, but I grew to like it a bit more than hollow knight",
-            "I am Fish is a game I couldnt play when I first got it, My laptop overheated and could not run it",
-            "Just Shapes and Beats is my favorite example of a story being told with symbols, and is an amazing game",
-            "No Man's Sky was first introduced to me at a place where you could pay 5$ an hour to play games, I was hooked immediately",
-            "Peaks of Yore is a game I liked after watching Astral Spiffs Vods on it, and my Boyfriend got it for me to play when on vacation and away from home",
-            "Rain World is a game I exclusively play on the steam deck",
-            "Steamworld Dig and Steamworld Dig 2 are titles I own on both steam and Nintendo Switch",
-            "Stray was a christmas gift from my boyfriend, I didnt want to play it for its short playtime, but It ended up being the only game to ever make me cry at the ending",
-            "The Legend Of Zelda; Breath of the Wild Is a game that took me ages to get into, and I had the same issue with the sequel",
-            "I got Balatro exclusively because Don't Starve Together did a cross over",
-            "Factorio is my most recently purchased game, but quickly becoming a favorite",
-            "I was recommended Factorio for years before I got it",
-            "Shapez is a game I got just for the sake of it, and ended up with too many hours of playtime",
-            "My boyfriend got me shapes 2 for valentines day after knowing how much I enjoyed Shapez",
-            "I got Vampire Survivors after the amount I play Brotato on the steam deck",
-            "In addition to 60 Parasecs, I own 60 seconds on my phone",
-            "Bigfoot is a game I have never played singleplayer",
-            "Content Warning is a game I exclusively got to play with my boyfriend",
-            "I have never played the original Don't Starve past day 2",
-            "For a long time, Don't Starve Together was my most played game",
-            "I only bought Don't Starve Together because It did a crossover with Terraria",
-            "In Don't Starve Together I main Wurt",
-            "Lethal company is probably the game that Im worst at that I have played a decent amount",
-            "I have nearly 70 hours in phasmophobia exclusively with my boyfriend, and then an additional 70 with others",
-            "I owned Subnatica and Below Zero on the switch, but got it again on steam for the sake of mods",
-            "The Survivalists is a game I knew like the back of my hand, but I barely know the recent versions",
-            "I have had 3 total island in Animal Crossing: New Horizens",
-            "Barista Simulator is a game that I nearly 100% completed in one sitting",
-            "Going Medieval is a game I have been supporting since it first released in early access",
-            "Good company is a game I never really played much",
-            "Hydroneer is a game I want to get into but can never do a playthrough long enough to do so",
-            "I have only ever had one successful run in Lets Build a zoo",
-            "Lobotomy Corporation is one of the first gifts my boyfriend ever got me",
-            "Despite liking Lobotomy Corporation, I am not into the series it's from",
-            "Oxygen Not Included is possibly my favorite game of all time",
-            "It took me 900 hours to fully beat oxygen not included",
-            "I currently have almost 1500 hours in Oxygen not included",
-            "Prison Architect was a game I love despite all of its bugs",
-            "I went into Slime Rancher mostly blind, and I do not think I played the game properly",
-            "Spore was one of the first games I ever wanted",
-            "I never made it past the space age in spore, the game always crashes",
-            "Supermarket simulator was a game I picked up on launch day, and I played it before Markiplier",
-            "I used to play the final earth 2 in school on coolmath, and decided to buy the full game on steam later",
-            "I am the first recorded person to get the Onbu ending in the wandering village",
-            "I was a playtester for the wandering village",
-            "I still own a license of the playtest version of the wandering Village to this day",
-            "Thief Simulator was my first ever game with a drivable car",
-            "Cult of the lamb is a game I sucked at on my first playthrough, but I loved the game on my second years later",
-            "The Binding of Issac Rebirth is a game I love, but I have no clue what Im doing in it",
-            "I own nearly every pokemon game for the switch",
-            "I have over 400 hours on Bloons TD6",
-            "Keep talking and nobody explodes is a game I got for my boyfriend and myself for christmas one year",
-            "My favorite track in Mario Kart 8 deluxe is Waluigis Pinball",
-            "I prefer mini motorways over mini metro",
-            "I have lost my entire Omori save file 3 times and have yet to get the motivation to beat the game",
-            "In Placid Plastic Duck Simulator, the pinkish reddish's duck name is Fred :)",
-            "I own stardew valley on 3 different devices",
-            "Super Mario Party came with the switch I bought after my old one broke",
-            "I have never once beat turmoil nor it's dlc",
-            "Wobbledogs is my favorite game to play in bed at night",
-            "I have never played Asseta Corza",
-            "Forza Horizon 4 and 5 are both games I pick up and casually play, I have never seriously done them",
-            "To this day I dont know what you can do in Garrys Mod, yet everyone has it",
-            "People's Playground is my favorite 2d sandbox",
-            "I have wanted Scrap Mechanic since I first saw it when it came out",
-            "Terraria used to be my most played game, until I got don't starve together",
-            "The only reason I have so many hours on terraria is that I don't know what I'm doing",
-            "I think the only reason Im good at Elvin Assasin is that I have so much real life archery practice",
-            "Aseprite is my favorite art program, would reccomend",
-            "I own 8 OST's",
-            "I have over 1000 hours shiny hunting",
-            "I own 5 devices that I use to play games"
-        ];
+let caughtSet = new Set(hardcodedCaught);
+let currentFilter = 'all';
 
-        let shuffledGames = [];
-        let shuffledFacts = [];
-        let currentGameIdx = 0;
-        let currentFactIdx = 0;
+// ── Per-entry detail data ──────────────────────────────────────────────────
+// Fill these in over time. Keys must match the rawList names exactly.
+// Fields: gender, origin, alpha (null if not from PLA/ZA), encounters, date
+// Leave any field as null to show "Not set" placeholder in the panel.
+const pokeData = {};
+// Seed all caught entries with blank placeholders so the panel always works
+hardcodedCaught.forEach(name => {
+    pokeData[name] = pokeData[name] || {
+        gender:     null,
+        origin:     null,
+        alpha:      null,
+        encounters: null,
+        date:       null
+    };
+});
+// ─────────────────────────────────────────────────────────────────────────
 
-        function shuffle(array) {
-            let currentIndex = array.length, randomIndex;
-            while (currentIndex != 0) {
-                randomIndex = Math.floor(Math.random() * currentIndex);
-                currentIndex--;
-                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
-            }
-            return array;
+// ── Detail Panel ──────────────────────────────────────────────────────────
+function openDetailPanel(name, spriteUrl, entryNum) {
+    const data = pokeData[name] || {};
+
+    document.getElementById('detail-name').textContent = name;
+    document.getElementById('detail-entry-num').textContent = `Entry #${entryNum}`;
+
+    const sprite = document.getElementById('detail-panel-sprite');
+    sprite.src = spriteUrl;
+    sprite.alt = name;
+
+    const set = (id, val) => {
+        const el = document.getElementById(id);
+        if (val !== null && val !== undefined && val !== '') {
+            el.textContent = val;
+            el.classList.remove('detail-placeholder');
+        } else {
+            el.textContent = 'Not set';
+            el.classList.add('detail-placeholder');
         }
+    };
 
-        const visibleGames = games.filter(g => !g.hidden);
-        
-        function refreshShuffles() {
-            shuffledGames = shuffle([...Array(visibleGames.length).keys()]);
-            shuffledFacts = shuffle([...Array(facts.length).keys()]);
-        }
+    set('dp-gender',     data.gender);
+    set('dp-origin',     data.origin);
+    set('dp-encounters', data.encounters);
+    set('dp-date',       data.date);
 
-        function calculateVault() {
-            let total = 0;
-            games.forEach(g => {
-                total += g.price || 0;
-                if (g.dlcs) g.dlcs.forEach(d => total += d.price || 0);
-            });
-            document.getElementById('totalValueDisplay').innerText = `$${total.toFixed(2)} CAD`;
-            document.getElementById('totalCountDisplay').innerText = games.length;
-        }
+    // Alpha row: only highlight if from PLA / ZA
+    const alphaRow = document.getElementById('dp-alpha-row');
+    if (data.alpha !== null && data.alpha !== undefined) {
+        set('dp-alpha', data.alpha);
+        alphaRow.classList.add('alpha-row');
+    } else {
+        set('dp-alpha', null);
+        alphaRow.classList.remove('alpha-row');
+    }
 
-        function updateFacts() {
-            const container = document.getElementById('factContainer');
-            container.innerHTML = '';
-            
-            for (let i = 0; i < 3; i++) {
-                const idx = shuffledFacts[currentFactIdx];
-                const div = document.createElement('div');
-                div.className = 'fact-item glass-panel p-3 rounded-xl text-[10px] leading-relaxed text-gray-300 border-l-2 border-blue-500';
-                div.innerText = facts[idx];
-                container.appendChild(div);
-                setTimeout(() => div.classList.add('show'), i * 150);
-                
-                currentFactIdx++;
-                if (currentFactIdx >= shuffledFacts.length) {
-                    shuffledFacts = shuffle([...Array(facts.length).keys()]);
-                    currentFactIdx = 0;
-                }
-            }
-        }
+    document.getElementById('detail-panel').classList.add('open');
+    document.getElementById('detail-overlay').classList.add('active');
+}
 
-        function updateGame() {
-            const card = document.getElementById('gameCard');
-            const rightStack = document.getElementById('dlcStackRight');
-            const leftStack = document.getElementById('dlcStackLeft');
-            
-            card.classList.add('fade-out');
-            rightStack.innerHTML = '';
-            leftStack.innerHTML = '';
+function closeDetailPanel() {
+    document.getElementById('detail-panel').classList.remove('open');
+    document.getElementById('detail-overlay').classList.remove('active');
+}
 
-            setTimeout(() => {
-                const game = visibleGames[shuffledGames[currentGameIdx]];
-                card.style.backgroundImage = `url('${game.img}')`;
-                card.style.backgroundSize = game.zoomFix ? 'contain' : 'cover';
-                card.style.backgroundRepeat = 'no-repeat';
-                card.classList.toggle('legendary', game.rarity === 'legendary');
-                
-                document.getElementById('gameTitle').innerText = game.title;
-                document.getElementById('gameCategory').innerText = game.category;
-                
-                let bundlePrice = game.price;
-                if (game.dlcs) game.dlcs.forEach(d => bundlePrice += (d.price || 0));
-                document.getElementById('priceBadge').innerText = bundlePrice === 0 ? "FREE ARTIFACT" : `$${bundlePrice.toFixed(2)} CAD`;
-                
-                if (game.dlcs) {
-                    document.getElementById('dlcCount').innerText = `${game.dlcs.length} DLC${game.dlcs.length !== 1 ? "S" : ""} DETECTED`;
-                    game.dlcs.forEach((dlc, i) => {
-                        const d = document.createElement('div');
-                        d.className = 'mini-dlc';
-                        if (dlc.img) d.style.backgroundImage = `url('${dlc.img}')`;
-                        const targetStack = dlc.side === 'left' ? leftStack : rightStack;
-                        targetStack.appendChild(d);
-                        setTimeout(() => d.classList.add('show'), i * 100);
-                    });
-                } else {
-                    document.getElementById('dlcCount').innerText = "NO DLC DETECTED";
-                }
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeDetailPanel();
+});
+// ─────────────────────────────────────────────────────────────────────────
 
-                card.classList.remove('fade-out');
-                card.classList.add('fade-in');
+const homeSharedGenderDiffs = ['rattata', 'raticate', 'scyther', 'murkrow', 'piloswine', 'combee'];
 
-                if (currentGameIdx % 2 === 0) updateFacts();
-                
-                currentGameIdx++;
-                if (currentGameIdx >= shuffledGames.length) {
-                    shuffledGames = shuffle([...Array(visibleGames.length).keys()]);
-                    currentGameIdx = 0;
-                }
-            }, 800);
-        }
+// Explicit slug overrides for forms that don't follow simple rules.
+// Values: [homeSlug, showdownSlug] — use same string for both if identical.
+// homeSlug  → img.pokemondb.net/sprites/home/shiny/{slug}.png
+// showdownSlug → play.pokemonshowdown.com/sprites/dex-shiny/{slug}.png
+const EXPLICIT_SLUGS = {
+    // ── Nidoran ──────────────────────────────────────────────────────────────
+    'nidoran f': ['nidoran-f', 'nidoran-f'],
+    'nidoran m': ['nidoran-m', 'nidoran-m'],
+    // ── Mr. Mime / Mime Jr / Mr. Rime ─────────────────────────────────────
+    'mr. mime':   ['mr-mime',   'mr-mime'],
+    'mr. mime g': ['mr-mime-galar', 'mr-mime-galar'],
+    'mime jr.':   ['mime-jr',   'mime-jr'],
+    'mr. rime':   ['mr-rime',   'mr-rime'],
+    // ── Type: Null ───────────────────────────────────────────────────────────
+    'type: null': ['type-null', 'typenull'],
+    // ── Tapu ─────────────────────────────────────────────────────────────────
+    'tapu koko':  ['tapu-koko',  'tapu-koko'],
+    'tapu lele':  ['tapu-lele',  'tapu-lele'],
+    'tapu bulu':  ['tapu-bulu',  'tapu-bulu'],
+    'tapu fini':  ['tapu-fini',  'tapu-fini'],
+    // ── Deoxys ───────────────────────────────────────────────────────────────
+    'deoxys':         ['deoxys',         'deoxys'],
+    'deoxys attack':  ['deoxys-attack',  'deoxys-attack'],
+    'deoxys defense': ['deoxys-defense', 'deoxys-defense'],
+    'deoxys speed':   ['deoxys-speed',   'deoxys-speed'],
+    // ── Rotom ────────────────────────────────────────────────────────────────
+    'rotom heat':  ['rotom-heat',  'rotom-heat'],
+    'rotom wash':  ['rotom-wash',  'rotom-wash'],
+    'rotom frost': ['rotom-frost', 'rotom-frost'],
+    'rotom fan':   ['rotom-fan',   'rotom-fan'],
+    'rotom mow':   ['rotom-mow',   'rotom-mow'],
+    // ── Shaymin ──────────────────────────────────────────────────────────────
+    'shaymin sky': ['shaymin-sky', 'shaymin-sky'],
+    // ── Basculin ─────────────────────────────────────────────────────────────
+    'basculin red':   ['basculin-red-striped',   'basculin'],
+    'basculin blue':  ['basculin-blue-striped',  'basculin-blue-striped'],
+    'basculin white': ['basculin-white-striped', 'basculin-white-striped'],
+    // ── Darumaka / Darmanitan Galar ──────────────────────────────────────────
+    'darumaka g':   ['darumaka-galar',    'darumaka-galar'],
+    'darmanitan g': ['darmanitan-galar',  'darmanitan-galar'],
+    // ── Deerling / Sawsbuck ───────────────────────────────────────────────────
+    'deerling spring': ['deerling-spring', 'deerling'],
+    'deerling summer': ['deerling-summer', 'deerling-summer'],
+    'deerling autumn': ['deerling-autumn', 'deerling-autumn'],
+    'deerling winter': ['deerling-winter', 'deerling-winter'],
+    'sawsbuck spring': ['sawsbuck-spring', 'sawsbuck'],
+    'sawsbuck summer': ['sawsbuck-summer', 'sawsbuck-summer'],
+    'sawsbuck autumn': ['sawsbuck-autumn', 'sawsbuck-autumn'],
+    'sawsbuck winter': ['sawsbuck-winter', 'sawsbuck-winter'],
+    // ── Tornadus / Thundurus / Landorus ──────────────────────────────────────
+    'tornadus incarnate':  ['tornadus',          'tornadus'],
+    'tornadus therian':    ['tornadus-therian',   'tornadus-therian'],
+    'thundurus incarnate': ['thundurus',          'thundurus'],
+    'thundurus therian':   ['thundurus-therian',  'thundurus-therian'],
+    'landorus incarnate':  ['landorus',           'landorus'],
+    'landorus therian':    ['landorus-therian',   'landorus-therian'],
+    // ── Tauros Paldean ───────────────────────────────────────────────────────
+    'tauros p - combat form': ['tauros-paldean-combat', 'tauros-paldea-combat'],
+    'tauros p - blaze form':  ['tauros-paldean-blaze',  'tauros-paldea-blaze'],
+    'tauros p - aqua form':   ['tauros-paldean-aqua',   'tauros-paldea-aqua'],
+    // ── Vivillon ─────────────────────────────────────────────────────────────
+    'vivillon - icy snow':    ['vivillon-icy-snow',    'vivillon-icysnow'],
+    'vivillon - polar':       ['vivillon-polar',       'vivillon-polar'],
+    'vivillon - tundra':      ['vivillon-tundra',      'vivillon-tundra'],
+    'vivillon - continental': ['vivillon-continental', 'vivillon-continental'],
+    'vivillon - garden':      ['vivillon-garden',      'vivillon-garden'],
+    'vivillon - elegant':     ['vivillon-elegant',     'vivillon-elegant'],
+    'vivillon - meadow':      ['vivillon-meadow',      'vivillon-meadow'],
+    'vivillon - modern':      ['vivillon-modern',      'vivillon-modern'],
+    'vivillon - marine':      ['vivillon-marine',      'vivillon-marine'],
+    'vivillon - archipelago': ['vivillon-archipelago', 'vivillon-archipelago'],
+    'vivillon - high plains': ['vivillon-high-plains', 'vivillon-highplains'],
+    'vivillon - sandstorm':   ['vivillon-sandstorm',   'vivillon-sandstorm'],
+    'vivillon - river':       ['vivillon-river',       'vivillon-river'],
+    'vivillon - monsoon':     ['vivillon-monsoon',     'vivillon-monsoon'],
+    'vivillon - savanna':     ['vivillon-savanna',     'vivillon-savanna'],
+    'vivillon - sun':         ['vivillon-sun',         'vivillon-sun'],
+    'vivillon - ocean':       ['vivillon-ocean',       'vivillon-ocean'],
+    'vivillon - jungle':      ['vivillon-jungle',      'vivillon-jungle'],
+    'vivillon - fancy':       ['vivillon-fancy',       'vivillon-fancy'],
+    // ── Flabébé / Floette / Florges ──────────────────────────────────────────
+    'flabébé - red':    ['flabebe-red',    'flabebe'],
+    'flabébé - yellow': ['flabebe-yellow', 'flabebe-yellow'],
+    'flabébé - orange': ['flabebe-orange', 'flabebe-orange'],
+    'flabébé - blue':   ['flabebe-blue',   'flabebe-blue'],
+    'flabébé - white':  ['flabebe-white',  'flabebe-white'],
+    'floette - red':    ['floette-red',    'floette'],
+    'floette - yellow': ['floette-yellow', 'floette-yellow'],
+    'floette - orange': ['floette-orange', 'floette-orange'],
+    'floette - blue':   ['floette-blue',   'floette-blue'],
+    'floette - white':  ['floette-white',  'floette-white'],
+    'florges - red':    ['florges-red',    'florges'],
+    'florges - yellow': ['florges-yellow', 'florges-yellow'],
+    'florges - orange': ['florges-orange', 'florges-orange'],
+    'florges - blue':   ['florges-blue',   'florges-blue'],
+    'florges - white':  ['florges-white',  'florges-white'],
+    // ── Furfrou ──────────────────────────────────────────────────────────────
+    'furfrou - heart':    ['furfrou-heart',    'furfrou-heart'],
+    'furfrou - star':     ['furfrou-star',     'furfrou-star'],
+    'furfrou - diamond':  ['furfrou-diamond',  'furfrou-diamond'],
+    'furfrou - debutante':['furfrou-debutante','furfrou-debutante'],
+    'furfrou - matron':   ['furfrou-matron',   'furfrou-matron'],
+    'furfrou - dandy':    ['furfrou-dandy',    'furfrou-dandy'],
+    'furfrou - la reine': ['furfrou-la-reine', 'furfrou-lareine'],
+    'furfrou - kabuki':   ['furfrou-kabuki',   'furfrou-kabuki'],
+    'furfrou - pharoah':  ['furfrou-pharaoh',  'furfrou-pharaoh'],
+    // ── Pumpkaboo / Gourgeist ─────────────────────────────────────────────────
+    'pumpkaboo - small':  ['pumpkaboo-small',  'pumpkaboo-small'],
+    'pumpkaboo - normal': ['pumpkaboo',        'pumpkaboo'],
+    'pumpkaboo - large':  ['pumpkaboo-large',  'pumpkaboo-large'],
+    'pumpkaboo - super':  ['pumpkaboo-super',  'pumpkaboo-super'],
+    'gourgeist - small':  ['gourgeist-small',  'gourgeist-small'],
+    'gourgeist - normal': ['gourgeist',        'gourgeist'],
+    'gourgeist - large':  ['gourgeist-large',  'gourgeist-large'],
+    'gourgeist - super':  ['gourgeist-super',  'gourgeist-super'],
+    // ── Zygarde ───────────────────────────────────────────────────────────────
+    'zygarde - 10%': ['zygarde-10',  'zygarde-10'],
+    'zygarde - 50%': ['zygarde',     'zygarde'],
+    // ── Oricorio ─────────────────────────────────────────────────────────────
+    'oricorio':            ['oricorio',           'oricorio'],
+    "oricorio - pompom":   ['oricorio-pom-pom',   'oricorio-pompom'],
+    "oricorio - pa'u":     ['oricorio-pau',        'oricorio-pau'],
+    'oricorio - sensu':    ['oricorio-sensu',      'oricorio-sensu'],
+    // ── Lycanroc ─────────────────────────────────────────────────────────────
+    'lycanroc - day':   ['lycanroc',          'lycanroc'],
+    'lycanroc - dusk':  ['lycanroc-dusk',     'lycanroc-dusk'],
+    'lycanroc - night': ['lycanroc-midnight', 'lycanroc-midnight'],
+    // ── Minior ───────────────────────────────────────────────────────────────
+    'minior - red':    ['minior-red-meteor',    'minior-red'],
+    'minior - orange': ['minior-orange-meteor', 'minior-orange'],
+    'minior - yellow': ['minior-yellow-meteor', 'minior-yellow'],
+    'minior - green':  ['minior-green-meteor',  'minior-green'],
+    'minior - blue':   ['minior-blue-meteor',   'minior-blue'],
+    'minior - indigo': ['minior-indigo-meteor',  'minior-indigo'],
+    'minior - violet': ['minior-violet-meteor', 'minior-violet'],
+    // ── Toxtricity ───────────────────────────────────────────────────────────
+    'toxtricity - amped':   ['toxtricity',         'toxtricity'],
+    'toxtricity - low key': ['toxtricity-low-key', 'toxtricity-lowkey'],
+    // ── Sinistea / Polteageist ────────────────────────────────────────────────
+    'sinistea - phony':      ['sinistea',          'sinistea'],
+    'sinistea - authentic':  ['sinistea-antique',  'sinistea-antique'],
+    'polteageist - phony':   ['polteageist',       'polteageist'],
+    'polteageist - authentic':['polteageist-antique','polteageist-antique'],
+    // ── Poltchageist / Sinistcha ─────────────────────────────────────────────
+    'poltchageist - counterfeit': ['poltchageist',         'poltchageist'],
+    'poltchageist - artisan':     ['poltchageist-artisan', 'poltchageist-artisan'],
+    'sinistcha - unremarkable':   ['sinistcha',            'sinistcha'],
+    'sinistcha - masterpiece':    ['sinistcha-masterpiece','sinistcha-masterpiece'],
+    // ── Alcremie (cream flavour only; sweets share the same HOME sprite) ─────
+    'alcremie - vanilla cream strawberry sweet': ['alcremie',             'alcremie'],
+    'alcremie - vanilla cream berry sweet':      ['alcremie',             'alcremie'],
+    'alcremie - vanilla cream love sweet':       ['alcremie',             'alcremie'],
+    'alcremie - vanilla cream star sweet':       ['alcremie',             'alcremie'],
+    'alcremie - vanilla cream clover sweet':     ['alcremie',             'alcremie'],
+    'alcremie - vanilla cream flower sweet':     ['alcremie',             'alcremie'],
+    'alcremie - vanilla cream ribbon sweet':     ['alcremie',             'alcremie'],
+    'alcremie - ruby cream strawberry sweet':    ['alcremie-ruby-cream',  'alcremie-ruby-cream'],
+    'alcremie - ruby cream berry sweet':         ['alcremie-ruby-cream',  'alcremie-ruby-cream'],
+    'alcremie - ruby cream love sweet':          ['alcremie-ruby-cream',  'alcremie-ruby-cream'],
+    'alcremie - ruby cream star sweet':          ['alcremie-ruby-cream',  'alcremie-ruby-cream'],
+    'alcremie - ruby cream clover sweet':        ['alcremie-ruby-cream',  'alcremie-ruby-cream'],
+    'alcremie - ruby cream flower sweet':        ['alcremie-ruby-cream',  'alcremie-ruby-cream'],
+    'alcremie - ruby cream ribbon sweet':        ['alcremie-ruby-cream',  'alcremie-ruby-cream'],
+    'alcremie - matcha cream strawberry sweet':  ['alcremie-matcha-cream','alcremie-matcha-cream'],
+    'alcremie - matcha cream berry sweet':       ['alcremie-matcha-cream','alcremie-matcha-cream'],
+    'alcremie - matcha cream love sweet':        ['alcremie-matcha-cream','alcremie-matcha-cream'],
+    'alcremie - matcha cream star sweet':        ['alcremie-matcha-cream','alcremie-matcha-cream'],
+    'alcremie - matcha cream clover sweet':      ['alcremie-matcha-cream','alcremie-matcha-cream'],
+    'alcremie - matcha cream flower sweet':      ['alcremie-matcha-cream','alcremie-matcha-cream'],
+    'alcremie - matcha cream ribbon sweet':      ['alcremie-matcha-cream','alcremie-matcha-cream'],
+    'alcremie - mint cream strawberry sweet':    ['alcremie-mint-cream',  'alcremie-mint-cream'],
+    'alcremie - mint cream berry sweet':         ['alcremie-mint-cream',  'alcremie-mint-cream'],
+    'alcremie - mint cream love sweet':          ['alcremie-mint-cream',  'alcremie-mint-cream'],
+    'alcremie - mint cream star sweet':          ['alcremie-mint-cream',  'alcremie-mint-cream'],
+    'alcremie - mint cream clover sweet':        ['alcremie-mint-cream',  'alcremie-mint-cream'],
+    'alcremie - mint cream flower sweet':        ['alcremie-mint-cream',  'alcremie-mint-cream'],
+    'alcremie - mint cream ribbon sweet':        ['alcremie-mint-cream',  'alcremie-mint-cream'],
+    'alcremie - lemon cream strawberry sweet':   ['alcremie-lemon-cream', 'alcremie-lemon-cream'],
+    'alcremie - lemon cream berry sweet':        ['alcremie-lemon-cream', 'alcremie-lemon-cream'],
+    'alcremie - lemon cream love sweet':         ['alcremie-lemon-cream', 'alcremie-lemon-cream'],
+    'alcremie - lemon cream star sweet':         ['alcremie-lemon-cream', 'alcremie-lemon-cream'],
+    'alcremie - lemon cream clover sweet':       ['alcremie-lemon-cream', 'alcremie-lemon-cream'],
+    'alcremie - lemon cream flower sweet':       ['alcremie-lemon-cream', 'alcremie-lemon-cream'],
+    'alcremie - lemon cream ribbon sweet':       ['alcremie-lemon-cream', 'alcremie-lemon-cream'],
+    'alcremie - salted cream strawberry sweet':  ['alcremie-salted-cream','alcremie-salted-cream'],
+    'alcremie - salted cream berry sweet':       ['alcremie-salted-cream','alcremie-salted-cream'],
+    'alcremie - salted cream love sweet':        ['alcremie-salted-cream','alcremie-salted-cream'],
+    'alcremie - salted cream star sweet':        ['alcremie-salted-cream','alcremie-salted-cream'],
+    'alcremie - salted cream clover sweet':      ['alcremie-salted-cream','alcremie-salted-cream'],
+    'alcremie - salted cream flower sweet':      ['alcremie-salted-cream','alcremie-salted-cream'],
+    'alcremie - salted cream ribbon sweet':      ['alcremie-salted-cream','alcremie-salted-cream'],
+    'alcremie - ruby swirl strawberry sweet':    ['alcremie-ruby-swirl',  'alcremie-ruby-swirl'],
+    'alcremie - ruby swirl berry sweet':         ['alcremie-ruby-swirl',  'alcremie-ruby-swirl'],
+    'alcremie - ruby swirl love sweet':          ['alcremie-ruby-swirl',  'alcremie-ruby-swirl'],
+    'alcremie - ruby swirl star sweet':          ['alcremie-ruby-swirl',  'alcremie-ruby-swirl'],
+    'alcremie - ruby swirl clover sweet':        ['alcremie-ruby-swirl',  'alcremie-ruby-swirl'],
+    'alcremie - ruby swirl flower sweet':        ['alcremie-ruby-swirl',  'alcremie-ruby-swirl'],
+    'alcremie - ruby swirl ribbon sweet':        ['alcremie-ruby-swirl',  'alcremie-ruby-swirl'],
+    'alcremie - caramel swirl strawberry sweet': ['alcremie-caramel-swirl','alcremie-caramel-swirl'],
+    'alcremie - caramel swirl berry sweet':      ['alcremie-caramel-swirl','alcremie-caramel-swirl'],
+    'alcremie - caramel swirl love sweet':       ['alcremie-caramel-swirl','alcremie-caramel-swirl'],
+    'alcremie - caramel swirl star sweet':       ['alcremie-caramel-swirl','alcremie-caramel-swirl'],
+    'alcremie - caramel swirl clover sweet':     ['alcremie-caramel-swirl','alcremie-caramel-swirl'],
+    'alcremie - caramel swirl flower sweet':     ['alcremie-caramel-swirl','alcremie-caramel-swirl'],
+    'alcremie - caramel swirl ribbon sweet':     ['alcremie-caramel-swirl','alcremie-caramel-swirl'],
+    'alcremie - rainbow swirl strawberry sweet': ['alcremie-rainbow-swirl','alcremie-rainbow-swirl'],
+    'alcremie - rainbow swirl berry sweet':      ['alcremie-rainbow-swirl','alcremie-rainbow-swirl'],
+    'alcremie - rainbow swirl love sweet':       ['alcremie-rainbow-swirl','alcremie-rainbow-swirl'],
+    'alcremie - rainbow swirl star sweet':       ['alcremie-rainbow-swirl','alcremie-rainbow-swirl'],
+    'alcremie - rainbow swirl clover sweet':     ['alcremie-rainbow-swirl','alcremie-rainbow-swirl'],
+    'alcremie - rainbow swirl flower sweet':     ['alcremie-rainbow-swirl','alcremie-rainbow-swirl'],
+    'alcremie - rainbow swirl ribbon sweet':     ['alcremie-rainbow-swirl','alcremie-rainbow-swirl'],
+    // ── Oinkologne ───────────────────────────────────────────────────────────
+    'oinkologne - m': ['oinkologne',        'oinkologne'],
+    'oinkologne - f': ['oinkologne-female', 'oinkologne-f'],
+    // ── Maushold ─────────────────────────────────────────────────────────────
+    'maushold - family of four':  ['maushold-family-of-four',  'maushold-four'],
+    'maushold - family of three': ['maushold-family-of-three', 'maushold'],
+    // ── Squawkabilly ─────────────────────────────────────────────────────────
+    'squawkabilly - green':  ['squawkabilly-green-plumage',  'squawkabilly'],
+    'squawkabilly - blue':   ['squawkabilly-blue-plumage',   'squawkabilly-blue'],
+    'squawkabilly - yellow': ['squawkabilly-yellow-plumage', 'squawkabilly-yellow'],
+    'squawkabilly - white':  ['squawkabilly-white-plumage',  'squawkabilly-white'],
+    // ── Tatsugiri ────────────────────────────────────────────────────────────
+    'tatsugiri - curly':    ['tatsugiri',          'tatsugiri'],
+    'tatsugiri - droopy':   ['tatsugiri-droopy',   'tatsugiri-droopy'],
+    'tatsugiri - stretchy': ['tatsugiri-stretchy', 'tatsugiri-stretchy'],
+    // ── Dudunsparce ──────────────────────────────────────────────────────────
+    'dudunsparce - two segment':   ['dudunsparce-two-segment',   'dudunsparce'],
+    'dudunsparce - three segment': ['dudunsparce-three-segment', 'dudunsparce-three-segment'],
+    // ── Paradox / multi-word base names ──────────────────────────────────────
+    'great tusk':    ['great-tusk',    'great-tusk'],
+    'scream tail':   ['scream-tail',   'scream-tail'],
+    'brute bonnet':  ['brute-bonnet',  'brute-bonnet'],
+    'flutter mane':  ['flutter-mane',  'flutter-mane'],
+    'slither wing':  ['slither-wing',  'slither-wing'],
+    'sandy shocks':  ['sandy-shocks',  'sandy-shocks'],
+    'iron treads':   ['iron-treads',   'iron-treads'],
+    'iron bundle':   ['iron-bundle',   'iron-bundle'],
+    'iron hands':    ['iron-hands',    'iron-hands'],
+    'iron jugulis':  ['iron-jugulis',  'iron-jugulis'],
+    'iron moth':     ['iron-moth',     'iron-moth'],
+    'iron thorns':   ['iron-thorns',   'iron-thorns'],
+    'roaring moon':  ['roaring-moon',  'roaring-moon'],
+    'iron valiant':  ['iron-valiant',  'iron-valiant'],
+    // ── Wormadam ─────────────────────────────────────────────────────────────
+    'wormadan':       ['wormadam',       'wormadam'],
+    'wormadan sand':  ['wormadam-sandy', 'wormadam-sandy'],
+    'wormadan trash': ['wormadam-trash', 'wormadam-trash'],
+    // ── Yamask Galar ─────────────────────────────────────────────────────────
+    'yamask g': ['yamask-galar', 'yamask-galar'],
+    // ── Castform forms ───────────────────────────────────────────────────────
+    'castform sunny': ['castform-sunny',  'castform-sunny'],
+    'castform rainy': ['castform-rainy',  'castform-rainy'],
+    'castform windy': ['castform-snowy',  'castform-snowy'],  // Hail = Snowy slug
+    // ── Sneasel Hisui (has gender variants) ─────────────────────────────────
+    'sneasel h - m': ['sneasel-hisui',   'sneasel-hisui'],
+    'sneasel h - f': ['sneasel-hisui-f', 'sneasel-hisui-f'],
+    // ── Qwilfish Hisui ───────────────────────────────────────────────────────
+    'qwilfish h': ['qwilfish-hisui', 'qwilfish-hisui'],
+    // ── Sliggoo / Goodra Hisui ───────────────────────────────────────────────
+    'sliggoo h': ['sliggoo-hisui', 'sliggoo-hisui'],
+    'goodra h':  ['goodra-hisui',  'goodra-hisui'],
+};
 
-        refreshShuffles();
-        calculateVault();
-        updateGame();
-        setInterval(updateGame, 6000);
+function getSpriteUrls(rawName) {
+    const name = rawName.trim().replace('\u2019', "'");
+    const lower = name.toLowerCase();
 
-        const bundle = document.getElementById('artifactBundle');
-        const card = document.getElementById('gameCard');
+    // 1. Exact explicit lookup first
+    if (EXPLICIT_SLUGS[lower]) {
+        const [h, s] = EXPLICIT_SLUGS[lower];
+        return {
+            home:     `https://img.pokemondb.net/sprites/home/shiny/${h}.png`,
+            showdown: `https://play.pokemonshowdown.com/sprites/dex-shiny/${s}.png`
+        };
+    }
 
-        window.addEventListener('mousemove', (e) => {
-            const rect = bundle.getBoundingClientRect();
-            const rotateY = (e.clientX - (rect.left + rect.width / 2)) / 15;
-            const rotateX = ((rect.top + rect.height / 2) - e.clientY) / 15;
-            bundle.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.03)`;
-            
-            const cardRect = card.getBoundingClientRect();
-            card.style.setProperty('--shine-pos-x', `${((e.clientX - cardRect.left) / cardRect.width) * 100}%`);
-            card.style.setProperty('--shine-pos-y', `${((e.clientY - cardRect.top) / cardRect.height) * 100}%`);
-            card.style.setProperty('--shine-opacity', '1');
-        });
+    // 2. Unown (A–Z, !, ?)
+    if (lower.startsWith('unown ')) {
+        const char = lower.split(' ')[1];
+        let homeSuffix, sdSuffix;
+        if (char === '!') { homeSuffix = '-exclamation'; sdSuffix = '-exclamation'; }
+        else if (char === '?') { homeSuffix = '-question'; sdSuffix = '-question'; }
+        else { homeSuffix = `-${char}`; sdSuffix = `-${char}`; }
+        return {
+            home:     `https://img.pokemondb.net/sprites/home/shiny/unown${homeSuffix}.png`,
+            showdown: `https://play.pokemonshowdown.com/sprites/dex-shiny/unown${sdSuffix}.png`
+        };
+    }
 
-        window.addEventListener('mouseout', () => {
-            bundle.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
-            card.style.setProperty('--shine-opacity', '0');
-        });
+    // 3. Regional suffix shorthands:  " A" → alola, " G" → galar, " H" → hisui, " P" → paldea
+    if (lower.endsWith(' a')) {
+        const base = lower.slice(0, -2).replace(/[^a-z0-9]/g, '-');
+        return {
+            home:     `https://img.pokemondb.net/sprites/home/shiny/${base}-alola.png`,
+            showdown: `https://play.pokemonshowdown.com/sprites/dex-shiny/${base}-alola.png`
+        };
+    }
+    if (lower.endsWith(' g')) {
+        const base = lower.slice(0, -2).replace(/[^a-z0-9]/g, '-');
+        return {
+            home:     `https://img.pokemondb.net/sprites/home/shiny/${base}-galar.png`,
+            showdown: `https://play.pokemonshowdown.com/sprites/dex-shiny/${base}-galar.png`
+        };
+    }
+    if (lower.endsWith(' h')) {
+        const base = lower.slice(0, -2).replace(/[^a-z0-9]/g, '-');
+        return {
+            home:     `https://img.pokemondb.net/sprites/home/shiny/${base}-hisui.png`,
+            showdown: `https://play.pokemonshowdown.com/sprites/dex-shiny/${base}-hisui.png`
+        };
+    }
+    if (lower.endsWith(' p')) {
+        const base = lower.slice(0, -2).replace(/[^a-z0-9]/g, '-');
+        return {
+            home:     `https://img.pokemondb.net/sprites/home/shiny/${base}-paldea.png`,
+            showdown: `https://play.pokemonshowdown.com/sprites/dex-shiny/${base}-paldea.png`
+        };
+    }
 
-        // ── CANVAS CYLINDER CAROUSEL ──────────────────────────────────────────
-        (function() {
-            const canvas = document.getElementById('carouselCanvas');
-            const ctx    = canvas.getContext('2d');
+    // 4. Gender differences  " M" / " F"
+    if (lower.endsWith(' m') || lower.endsWith(' f')) {
+        const gender = lower.slice(-1);
+        const gBase  = lower.slice(0, -2).replace(/[^a-z0-9]/g, '-');
+        // Some HOME sprites share one image regardless of gender
+        const homeShared = ['rattata','raticate','scyther','murkrow','piloswine','combee'];
+        const homeSuffix = (gender === 'f' && !homeShared.includes(gBase)) ? '-f' : '';
+        const sdSuffix   = (gender === 'f' && !homeShared.includes(gBase)) ? '-f' : '';
+        return {
+            home:     `https://img.pokemondb.net/sprites/home/shiny/${gBase}${homeSuffix}.png`,
+            showdown: `https://play.pokemonshowdown.com/sprites/dex-shiny/${gBase}${sdSuffix}.png`
+        };
+    }
 
-            // ── Layout ────────────────────────────────────────────────────
-            const CARD_W    = 210;
-            const CARD_H    = 148;
-            const GAP_X     = 18;
-            const GAP_Y     = 14;
-            const ROWS      = 4;
-            const RADIUS    = 1100;
-            const ROT_SPEED = 0.00016;   // radians per ms
-            const FOV       = 880;
-            const CORNER_R  = 10;
-            // Only draw cards whose world-Z is > this (positive = in front of viewer)
-            // Viewer sits at Z = -FOV, cylinder centre at Z=0
-            // A card at theta=π is directly behind → worldZ = -RADIUS → cull it
-            // We want to show roughly the front 180° = worldZ > 0
-            // Add a small buffer so cards don't pop right at 90°
-            const CULL_FRONT = 30; // minimum worldZ to be visible
+    // 5. Fallback: sanitise the name to a slug
+    const slug = lower.replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    return {
+        home:     `https://img.pokemondb.net/sprites/home/shiny/${slug}.png`,
+        showdown: `https://play.pokemonshowdown.com/sprites/dex-shiny/${slug}.png`
+    };
+}
 
-            // ── Collect images ────────────────────────────────────────────
-            const allImgs = [];
-            const seen = new Set();
-            games.forEach(g => {
-                if (g.img && !g.img.includes('placehold.co') && !seen.has(g.img)) {
-                    seen.add(g.img); allImgs.push(g.img);
-                }
-                if (g.dlcs) g.dlcs.forEach(d => {
-                    if (d.img && !d.img.includes('placehold.co') && !seen.has(d.img)) {
-                        seen.add(d.img); allImgs.push(d.img);
-                    }
+function init() {
+    const container = document.getElementById('dex');
+    const lines = rawList.split('\n').map(l => l.trim()).filter(l => l);
+    const blockSize = 30; 
+
+    for (let i = 0; i < lines.length; i += blockSize) {
+        const blockNum = Math.floor(i / blockSize) + 1;
+        const blockEnd = Math.min(i + blockSize, lines.length);
+        const blockLines = lines.slice(i, blockEnd);
+
+        const groupWrap = document.createElement('div');
+        groupWrap.className = 'group-wrapper';
+        groupWrap.innerHTML = `
+            <div class="group-header" id="gh-${blockNum}" onclick="toggleGroup(${blockNum})">
+                <span style="font-weight: 600; font-size: 1rem; letter-spacing: 0.5px;">Box ${blockNum} <small style="color:var(--text-dim); font-weight: 400; margin-left: 8px;">(${i+1}&ndash;${blockEnd})</small></span>
+                <span id="gs-${blockNum}" style="font-family: 'Space Mono'; font-size: 0.8rem; color: var(--gold)">0 / 30</span>
+            </div>
+            <div class="group-scroll-area" id="gsa-${blockNum}">
+                <div class="group-grid" id="gg-${blockNum}"></div>
+            </div>
+        `;
+        container.appendChild(groupWrap);
+
+        const grid = document.getElementById('gg-' + blockNum);
+        blockLines.forEach((name, j) => {
+            const entryNum = i + j + 1;
+            const urls = getSpriteUrls(name);
+            const isCaught = caughtSet.has(name);
+            const card = document.createElement('div');
+            card.className = 'poke-card' + (isCaught ? ' caught' : '');
+            card.innerHTML = `
+                <div class="sprite-box">
+                    <img src="${urls.home}" 
+                         loading="lazy" 
+                         alt="${name}"
+                         onerror="handleImgErr(this, '${urls.showdown}')">
+                </div>
+                <div class="poke-info">
+                    <div class="poke-name">${name}</div>
+                </div>
+            `;
+            if (isCaught) {
+                card.addEventListener('click', () => {
+                    const img = card.querySelector('img');
+                    openDetailPanel(name, img.src, entryNum);
                 });
-            });
-            // Shuffle pool
-            for (let i = allImgs.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [allImgs[i], allImgs[j]] = [allImgs[j], allImgs[i]];
             }
+            grid.appendChild(card);
+        });
+    }
+    updateStats();
+}
 
-            // ── Build card grid ───────────────────────────────────────────
-            const circumference = 2 * Math.PI * RADIUS;
-            const COLS       = Math.floor(circumference / (CARD_W + GAP_X));
-            const ANGLE_STEP = (2 * Math.PI) / COLS;
+function handleImgErr(img, backup) {
+    if (!img.dataset.triedBackup) {
+        img.dataset.triedBackup = "true";
+        img.src = backup;
+    } else {
+        img.src = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png";
+        img.style.opacity = "0.15";
+    }
+}
 
-            const cardPool = [];
-            for (let col = 0; col < COLS; col++) {
-                for (let row = 0; row < ROWS; row++) {
-                    cardPool.push({
-                        col, row,
-                        imgUrl: allImgs[(col * ROWS + row) % allImgs.length]
-                    });
-                }
-            }
+function updateStats() {
+    const total = rawList.split('\n').filter(l => l.trim()).length;
+    const cnt = caughtSet.size;
+    const pct = total > 0 ? (cnt / total) * 100 : 0;
+    
+    document.getElementById('caught-count').textContent = cnt;
+    document.getElementById('total-count').textContent  = total;
+    document.getElementById('pct-label').textContent    = pct.toFixed(2) + '%';
+    document.getElementById('progress-fill').style.width = pct + '%';
 
-            // ── Preload ALL images before revealing ───────────────────────
-            // No crossOrigin flag — drawImage works fine without getImageData.
-            // We use Promise.allSettled so even failed images don't stall the reveal.
-            const imageCache = new Map(); // url → HTMLImageElement
-            const overlay  = document.getElementById('preload-overlay');
-            const bar      = document.getElementById('preload-bar-fill');
-            const countEl  = document.getElementById('preload-count');
+    document.querySelectorAll('.group-header').forEach(header => {
+        const id = header.id.split('-')[1];
+        const grid = document.getElementById('gg-' + id);
+        if (grid) {
+            const gTotal = grid.querySelectorAll('.poke-card').length;
+            const gCaught = grid.querySelectorAll('.poke-card.caught').length;
+            const gsSpan = document.getElementById('gs-' + id);
+            if (gsSpan) gsSpan.textContent = `${gCaught} / ${gTotal}`;
+        }
+    });
+}
 
-            countEl.textContent = `0 / ${allImgs.length}`;
-            let doneCount = 0;
+function toggleGroup(g) {
+    const scrollArea = document.getElementById('gsa-' + g);
+    const hdr  = document.getElementById('gh-' + g);
+    if (!scrollArea) return;
+    const isHidden = scrollArea.classList.toggle('hidden');
+    hdr.classList.toggle('closed', isHidden);
+}
 
-            function updateProgress() {
-                doneCount++;
-                const pct = Math.round((doneCount / allImgs.length) * 100);
-                bar.style.width = pct + '%';
-                countEl.textContent = `${doneCount} / ${allImgs.length}`;
-            }
+function toggleAll(expand) {
+    document.querySelectorAll('.group-scroll-area').forEach(scrollArea => {
+        scrollArea.classList.toggle('hidden', !expand);
+        const id = scrollArea.id.split('-')[1];
+        const hdr = document.getElementById('gh-' + id);
+        if (hdr) hdr.classList.toggle('closed', !expand);
+    });
+}
 
-            // Load every image immediately — all in parallel, no batching
-            // (browser already limits concurrent connections per host natively)
-            const loadPromises = allImgs.map(url => new Promise(resolve => {
-                const img = new Image();
-                // NO crossOrigin attribute — this is the key fix.
-                // crossOrigin='anonymous' causes CORS preflight failures on most
-                // image CDNs and makes drawImage refuse to paint them.
-                img.onload = () => {
-                    imageCache.set(url, img);
-                    updateProgress();
-                    resolve();
-                };
-                img.onerror = () => {
-                    // Still mark as done so progress reaches 100%
-                    updateProgress();
-                    resolve();
-                };
-                img.src = url;
-            }));
+function setFilter(mode) {
+    currentFilter = mode;
+    ['all','caught','uncaught'].forEach(m => {
+        const btn = document.getElementById('f-' + m);
+        if (btn) btn.classList.toggle('active', m === mode);
+    });
+    document.querySelectorAll('.poke-card').forEach(card => {
+        const isCaught = card.classList.contains('caught');
+        let hide = (currentFilter === 'caught' && !isCaught) || (currentFilter === 'uncaught' && isCaught);
+        card.classList.toggle('filter-hide', hide);
+    });
+}
 
-            // Only hide overlay once every single promise settles
-            Promise.allSettled(loadPromises).then(() => {
-                setTimeout(() => {
-                    overlay.classList.add('done');
-                    setTimeout(() => overlay.remove(), 900);
-                }, 150);
-            });
-
-            // ── Canvas resize ─────────────────────────────────────────────
-            function resize() {
-                canvas.width  = window.innerWidth;
-                canvas.height = window.innerHeight;
-            }
-            resize();
-            window.addEventListener('resize', resize);
-
-            // ── Rounded rect path helper ──────────────────────────────────
-            function roundRect(x, y, w, h, r) {
-                ctx.beginPath();
-                ctx.moveTo(x + r, y);
-                ctx.lineTo(x + w - r, y);
-                ctx.quadraticCurveTo(x + w, y,     x + w, y + r);
-                ctx.lineTo(x + w, y + h - r);
-                ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-                ctx.lineTo(x + r, y + h);
-                ctx.quadraticCurveTo(x,     y + h, x,     y + h - r);
-                ctx.lineTo(x, y + r);
-                ctx.quadraticCurveTo(x,     y,     x + r, y);
-                ctx.closePath();
-            }
-
-            // ── Render loop ───────────────────────────────────────────────
-            const totalH = ROWS * CARD_H + (ROWS - 1) * GAP_Y;
-            let angle  = 0;
-            let lastTs = null;
-
-            function draw(ts) {
-                if (lastTs !== null) angle += (ts - lastTs) * ROT_SPEED;
-                lastTs = ts;
-
-                const W = canvas.width;
-                const H = canvas.height;
-                ctx.clearRect(0, 0, W, H);
-
-                const CX = W / 2;
-                const CY = H / 2;
-
-                // ── Project all cards, cull invisible ones ─────────────────
-                const visible = [];
-                for (const card of cardPool) {
-                    const theta  = card.col * ANGLE_STEP + angle;
-                    const worldX = Math.sin(theta) * RADIUS;
-                    const worldZ = Math.cos(theta) * RADIUS;
-
-                    // Cull: only the forward-facing hemisphere
-                    if (worldZ < CULL_FRONT) continue;
-
-                    const scale   = FOV / (FOV + worldZ);
-                    const screenX = CX + worldX * scale;
-                    const rowY    = -totalH / 2 + card.row * (CARD_H + GAP_Y);
-                    const screenY = CY + rowY * scale;
-                    const w = CARD_W * scale;
-                    const h = CARD_H * scale;
-
-                    // Cull off-screen cards entirely
-                    if (screenX + w * 0.5 < 0 || screenX - w * 0.5 > W) continue;
-                    if (screenY + h * 0.5 < 0 || screenY - h * 0.5 > H) continue;
-
-                    visible.push({ card, screenX, screenY, w, h, scale, worldZ });
-                }
-
-                // Painter's sort: far (large worldZ) drawn first
-                visible.sort((a, b) => b.worldZ - a.worldZ);
-
-                // ── Draw each card ─────────────────────────────────────────
-                for (const v of visible) {
-                    const x = v.screenX - v.w / 2;
-                    const y = v.screenY - v.h / 2;
-                    const r = CORNER_R * v.scale;
-
-                    // Depth fade: front hemisphere 0→RADIUS maps to alpha 0.9→0.28
-                    const t     = Math.max(0, Math.min(1, (v.worldZ - CULL_FRONT) / (RADIUS - CULL_FRONT)));
-                    const alpha = 0.9 - t * 0.62;
-
-                    const imgEl = imageCache.get(v.card.imgUrl);
-
-                    ctx.save();
-                    ctx.globalAlpha = alpha;
-
-                    // Clip to rounded rect
-                    roundRect(x, y, v.w, v.h, r);
-                    ctx.clip();
-
-                    if (imgEl && imgEl.complete && imgEl.naturalWidth > 0) {
-                        // Cover-fit: crop source so it fills the card without stretching
-                        const ir = imgEl.naturalWidth / imgEl.naturalHeight;
-                        const cr = v.w / v.h;
-                        let sx, sy, sw, sh;
-                        if (ir > cr) {
-                            // image is wider than card ratio — crop sides
-                            sh = imgEl.naturalHeight;
-                            sw = sh * cr;
-                            sx = (imgEl.naturalWidth - sw) / 2;
-                            sy = 0;
-                        } else {
-                            // image is taller — crop top/bottom
-                            sw = imgEl.naturalWidth;
-                            sh = sw / cr;
-                            sx = 0;
-                            sy = (imgEl.naturalHeight - sh) / 2;
-                        }
-                        try {
-                            ctx.drawImage(imgEl, sx, sy, sw, sh, x, y, v.w, v.h);
-                        } catch(e) {
-                            // Tainted canvas fallback (should not happen without crossOrigin)
-                            ctx.fillStyle = '#1a1a2e';
-                            ctx.fillRect(x, y, v.w, v.h);
-                        }
-                    } else {
-                        // Placeholder for images still loading / failed
-                        ctx.fillStyle = '#1c1c30';
-                        ctx.fillRect(x, y, v.w, v.h);
-                    }
-
-                    ctx.restore();
-
-                    // Subtle border ring on top of image
-                    ctx.save();
-                    ctx.globalAlpha = alpha * 0.12;
-                    roundRect(x, y, v.w, v.h, r);
-                    ctx.strokeStyle = '#ffffff';
-                    ctx.lineWidth   = 1.5;
-                    ctx.stroke();
-                    ctx.restore();
-                }
-
-                requestAnimationFrame(draw);
-            }
-
-            requestAnimationFrame(draw);
-        })();
-        // ─────────────────────────────────────────────────────────────────────
-    </script>
+window.onload = init;
+</script>
 </body>
 </html>
