@@ -1814,6 +1814,20 @@ const hardcodedCaught = [
 "Amoonguss", "Araquanid", "Avalugg", "Avalugg H", "Bergmite", "Bisharp", "Braviary G", "Carbink", "Chandelure", "Charjabug", "Clawitzer", "Cofagrigus", "Comfey", "Crabominable", "Crabrawler", "Cutiefly", "Deerling Spring", "Delphox", "Dragalge", "Drampa", "Drilbur", "Espurr", "Excadrill", "Fletchinder", "Foongus", "Fraxure", "Frogadier", "Gogoat", "Goodra", "Goomy", "Greninja", "Hakamo-o", "Hawlucha", "Heliolisk", "Honedge", "Hydreigon", "Jangmo-o", "Lampent", "Lilligant", "Litleo", "Litwick", "Lunala", "Lurantis", "Melmetal", "Meltan", "Meowstic F", "Mienfoo", "Mimikyu", "Minior - Blue", "Mudbray", "Mudsdale", "Noibat", "Noivern", "Oranguru", "Oricorio", "Palossand", "Pancham", "Passimian", "Pawniard", "Petilil", "Primarina", "Pyroar F", "Ribombee", "Rockruff", "Rowlet", "Rufflet", "Salandit", "Samurott H", "Sandygast", "Sawsbuck Spring", "Skiddo", "Sliggoo", "Stakataka", "Stunfisk G", "Swoobat", "Tapu Koko", "Toucannon", "Trevenant", "Vikavolt", "Virizion", "Volcarona", "Wimpod", "Zoroark", "Zoroark H", "Zorua", "Zorua H", "Zweilous"
 ];
 
+const supplementalCaught = [
+    // Newly caught entries
+    "Rotom Frost", "Rotom Fan", "Rotom Mow", "Dragonite", "Goodra H", "Sliggoo H",
+    // Legends: Z-A catches
+    "Pidgeotto", "Pancham", "Venipede", "Delphox", "Excadrill", "Drilbur",
+    "Pyroar M", "Roselia M", "Roselia F", "Kangaskhan", "Meditite M", "Meditite F",
+    "Wimpod", "Honedge", "Starmie", "Sylveon", "Numel M", "Numel F",
+    "Camerupt M", "Camerupt F", "Inkay", "Kakuna", "Fletchling"
+];
+
+supplementalCaught.forEach(name => {
+    if (!hardcodedCaught.includes(name)) hardcodedCaught.push(name);
+});
+
 let caughtSet = new Set(hardcodedCaught);
 let currentFilter = 'all';
 
@@ -1830,6 +1844,21 @@ hardcodedCaught.forEach(name => {
         alpha:      null,
         encounters: null,
         date:       null
+    };
+});
+
+const zaEntries = [
+    "Pidgeotto", "Pancham", "Venipede", "Delphox", "Excadrill", "Drilbur",
+    "Pyroar M", "Roselia M", "Roselia F", "Kangaskhan", "Meditite M", "Meditite F",
+    "Wimpod", "Honedge", "Starmie", "Sylveon", "Numel M", "Numel F",
+    "Camerupt M", "Camerupt F", "Inkay", "Kakuna", "Fletchling"
+];
+
+zaEntries.forEach(name => {
+    pokeData[name] = {
+        ...(pokeData[name] || {}),
+        origin: 'ZA',
+        alpha: name === 'Excadrill' ? 'Alpha' : null
     };
 });
 // ─────────────────────────────────────────────────────────────────────────
@@ -1897,7 +1926,7 @@ const EXPLICIT_SLUGS = {
     'nidoran m': ['nidoran-m', 'nidoran-m'],
     // ── Mr. Mime / Mime Jr / Mr. Rime ─────────────────────────────────────
     'mr. mime':   ['mr-mime',   'mr-mime'],
-    'mr. mime g': ['mr-mime-galar', 'mr-mime-galar'],
+    'mr. mime g': ['mr-mime-galarian', 'mr-mime-galar'],
     'mime jr.':   ['mime-jr',   'mime-jr'],
     'mr. rime':   ['mr-rime',   'mr-rime'],
     // ── Type: Null ───────────────────────────────────────────────────────────
@@ -1925,8 +1954,8 @@ const EXPLICIT_SLUGS = {
     'basculin blue':  ['basculin-blue-striped',  'basculin-blue-striped'],
     'basculin white': ['basculin-white-striped', 'basculin-white-striped'],
     // ── Darumaka / Darmanitan Galar ──────────────────────────────────────────
-    'darumaka g':   ['darumaka-galar',    'darumaka-galar'],
-    'darmanitan g': ['darmanitan-galar',  'darmanitan-galar'],
+    'darumaka g':   ['darumaka-galarian',    'darumaka-galar'],
+    'darmanitan g': ['darmanitan-galarian',  'darmanitan-galar'],
     // ── Deerling / Sawsbuck ───────────────────────────────────────────────────
     'deerling spring': ['deerling-spring', 'deerling'],
     'deerling summer': ['deerling-summer', 'deerling-summer'],
@@ -2137,7 +2166,7 @@ const EXPLICIT_SLUGS = {
     'wormadan sand':  ['wormadam-sandy', 'wormadam-sandy'],
     'wormadan trash': ['wormadam-trash', 'wormadam-trash'],
     // ── Yamask Galar ─────────────────────────────────────────────────────────
-    'yamask g': ['yamask-galar', 'yamask-galar'],
+    'yamask g': ['yamask-galarian', 'yamask-galar'],
     // ── Castform forms ───────────────────────────────────────────────────────
     'castform sunny': ['castform-sunny',  'castform-sunny'],
     'castform rainy': ['castform-rainy',  'castform-rainy'],
@@ -2151,6 +2180,30 @@ const EXPLICIT_SLUGS = {
     'sliggoo h': ['sliggoo-hisui', 'sliggoo-hisui'],
     'goodra h':  ['goodra-hisui',  'goodra-hisui'],
 };
+
+// HOME shiny Alcremie forms are keyed by sweet on the vanilla-cream shiny body;
+// non-vanilla creams share that shiny body and only differ by their sweet.
+const ALCREMIE_SWEETS = ['strawberry', 'berry', 'love', 'star', 'clover', 'flower', 'ribbon'];
+const ALCREMIE_SHOWDOWN_SLUGS = {
+    'vanilla cream': 'alcremie',
+    'ruby cream': 'alcremie-ruby-cream',
+    'matcha cream': 'alcremie-matcha-cream',
+    'mint cream': 'alcremie-mint-cream',
+    'lemon cream': 'alcremie-lemon-cream',
+    'salted cream': 'alcremie-salted-cream',
+    'ruby swirl': 'alcremie-ruby-swirl',
+    'caramel swirl': 'alcremie-caramel-swirl',
+    'rainbow swirl': 'alcremie-rainbow-swirl'
+};
+
+Object.entries(ALCREMIE_SHOWDOWN_SLUGS).forEach(([cream, showdownSlug]) => {
+    ALCREMIE_SWEETS.forEach(sweet => {
+        EXPLICIT_SLUGS[`alcremie - ${cream} ${sweet} sweet`] = [
+            `alcremie-vanilla-cream-${sweet}`,
+            showdownSlug
+        ];
+    });
+});
 
 function getSpriteUrls(rawName) {
     const name = rawName.trim().replace('\u2019', "'");
@@ -2189,7 +2242,7 @@ function getSpriteUrls(rawName) {
     if (lower.endsWith(' g')) {
         const base = lower.slice(0, -2).replace(/[^a-z0-9]/g, '-');
         return {
-            home:     `https://img.pokemondb.net/sprites/home/shiny/${base}-galar.png`,
+            home:     `https://img.pokemondb.net/sprites/home/shiny/${base}-galarian.png`,
             showdown: `https://play.pokemonshowdown.com/sprites/dex-shiny/${base}-galar.png`
         };
     }
