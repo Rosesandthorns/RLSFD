@@ -1841,6 +1841,7 @@ const supplementalCaught = [
     "Floette - White", "Floette - Orange", "Panpour",
     "Furfrou - Matron", "Ivysaur", "Falinks",
     "Meditite F", "Throh", "Medicham F", "Medicham M",
+    "Eelektrik", "Mawile",
     // ── SwSh ─────────────────────────────────────────────────────────────────
     "Alcremie - Vanilla Cream Strawberry Sweet",
     "Alcremie - Vanilla Cream Berry Sweet",
@@ -1927,7 +1928,9 @@ const zaEntries2 = [
     { name: "Meditite F", gender: "Female" },
     { name: "Throh", alpha: "Alpha" },
     { name: "Medicham F", gender: "Female" },
-    { name: "Medicham M", gender: "Male" }
+    { name: "Medicham M", gender: "Male" },
+    { name: "Eelektrik" },
+    { name: "Mawile" }
 ];
 zaEntries2.forEach(({ name, gender, alpha }) => {
     pokeData[name] = { ...(pokeData[name] || {}), origin: 'ZA', gender: gender || null, alpha: alpha || null };
