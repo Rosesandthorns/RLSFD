@@ -1831,7 +1831,28 @@ const supplementalCaught = [
     "Helioptile", "Pansear", "Rookidee", "Swablu",
     // Further additions
     "Yamask", "Pumpkaboo - Normal", "Gourgeist - Normal",
-    "Ducklett", "Cramorant", "Vullaby", "Feebas", "Milotic F", "Pidgeot"
+    "Ducklett", "Cramorant", "Vullaby", "Feebas", "Milotic F", "Pidgeot",
+    // ── SV ───────────────────────────────────────────────────────────────────
+    "Milotic F",
+    // ── ZA ───────────────────────────────────────────────────────────────────
+    "Gourgeist - Normal", "Golisopod", "Dedenne", "Chespin", "Quilladin", "Chesnaught",
+    "Binacle", "Barbaracle", "Tyrunt", "Weedle", "Beedrill",
+    "Scatterbug", "Spewpa", "Vivillon - Garden", "Skarmory",
+    "Floette - White", "Floette - Orange", "Panpour",
+    "Furfrou - Matron", "Ivysaur", "Falinks",
+    "Meditite F", "Throh", "Medicham F", "Medicham M",
+    // ── SwSh ─────────────────────────────────────────────────────────────────
+    "Alcremie - Vanilla Cream Strawberry Sweet",
+    "Alcremie - Vanilla Cream Berry Sweet",
+    "Alcremie - Ruby Cream Berry Sweet",
+    "Alcremie - Ruby Swirl Love Sweet",
+    "Alcremie - Ruby Swirl Ribbon Sweet",
+    "Alcremie - Rainbow Swirl Berry Sweet",
+    "Alcremie - Rainbow Swirl Love Sweet",
+    "Alcremie - Rainbow Swirl Flower Sweet",
+    "Mime Jr.", "Rolycoly", "Carkol", "Coalossal",
+    "Roggenrola", "Boldore", "Gigalith",
+    "Dwebble", "Crustle"
 ];
 
 supplementalCaught.forEach(name => {
@@ -1870,6 +1891,64 @@ zaEntries.forEach(name => {
         origin: 'ZA',
         alpha: name === 'Excadrill' ? 'Alpha' : null
     };
+});
+
+// ── SV entries ────────────────────────────────────────────────────────────
+const svEntries = [
+    { name: "Milotic F", gender: "Female" }
+];
+svEntries.forEach(({ name, gender }) => {
+    pokeData[name] = { ...(pokeData[name] || {}), origin: 'SV', gender: gender || null, alpha: null };
+});
+
+// ── Additional ZA entries ──────────────────────────────────────────────────
+const zaEntries2 = [
+    { name: "Gourgeist - Normal" },
+    { name: "Golisopod" },
+    { name: "Dedenne" },
+    { name: "Chespin" },
+    { name: "Quilladin" },
+    { name: "Chesnaught" },
+    { name: "Binacle" },
+    { name: "Barbaracle" },
+    { name: "Tyrunt", alpha: "Alpha" },
+    { name: "Weedle" },
+    { name: "Beedrill" },
+    { name: "Scatterbug" },
+    { name: "Spewpa" },
+    { name: "Vivillon - Garden" },
+    { name: "Skarmory" },
+    { name: "Floette - White" },
+    { name: "Floette - Orange" },
+    { name: "Panpour" },
+    { name: "Furfrou - Matron" },
+    { name: "Ivysaur", gender: "Male" },
+    { name: "Falinks" },
+    { name: "Meditite F", gender: "Female" },
+    { name: "Throh", alpha: "Alpha" },
+    { name: "Medicham F", gender: "Female" },
+    { name: "Medicham M", gender: "Male" }
+];
+zaEntries2.forEach(({ name, gender, alpha }) => {
+    pokeData[name] = { ...(pokeData[name] || {}), origin: 'ZA', gender: gender || null, alpha: alpha || null };
+});
+
+// ── SwSh entries ──────────────────────────────────────────────────────────
+const swshEntries = [
+    "Alcremie - Vanilla Cream Strawberry Sweet",
+    "Alcremie - Vanilla Cream Berry Sweet",
+    "Alcremie - Ruby Cream Berry Sweet",
+    "Alcremie - Ruby Swirl Love Sweet",
+    "Alcremie - Ruby Swirl Ribbon Sweet",
+    "Alcremie - Rainbow Swirl Berry Sweet",
+    "Alcremie - Rainbow Swirl Love Sweet",
+    "Alcremie - Rainbow Swirl Flower Sweet",
+    "Mime Jr.", "Rolycoly", "Carkol", "Coalossal",
+    "Roggenrola", "Boldore", "Gigalith",
+    "Dwebble", "Crustle"
+];
+swshEntries.forEach(name => {
+    pokeData[name] = { ...(pokeData[name] || {}), origin: 'SwSh', alpha: null };
 });
 // ─────────────────────────────────────────────────────────────────────────
 
