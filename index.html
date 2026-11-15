@@ -1842,8 +1842,12 @@ const supplementalCaught = [
     "Furfrou - Matron", "Ivysaur", "Falinks",
     "Meditite F", "Throh", "Medicham F", "Medicham M",
     "Eelektrik", "Mawile",
+    "Mr. Mime G", "Dachsbun", "Florges - Blue", "Florges - Red", "Florges - White",
+    "Krokorok", "Vanillite", "Sirfetch'd", "Talonflame",
+    "Flabébé - White", "Flabébé - Yellow", "Fidough", "Slurpuff", "Toxel",
+    "Electrike", "Manectric", "Farfetch'd",
     // ── SwSh ─────────────────────────────────────────────────────────────────
-    "Mime Jr.", "Rolycoly", "Carkol", "Coalossal",
+    "Mr. Mime", "Mime Jr.", "Rolycoly", "Carkol", "Coalossal",
     "Roggenrola", "Boldore", "Gigalith",
     "Dwebble", "Crustle",
     "Nickit", "Thievul", "Linoone G", "Obstagoon", "Meowth G",
@@ -1988,7 +1992,25 @@ const zaEntries2 = [
     { name: "Medicham F", gender: "Female" },
     { name: "Medicham M", gender: "Male" },
     { name: "Eelektrik" },
-    { name: "Mawile" }
+    { name: "Mawile" },
+    { name: "Mr. Mime G" },
+    { name: "Dachsbun" },
+    { name: "Florges - Blue" },
+    { name: "Florges - Red" },
+    { name: "Florges - White" },
+    { name: "Krokorok" },
+    { name: "Vanillite" },
+    { name: "Sirfetch'd" },
+    { name: "Talonflame" },
+    { name: "Flabébé - White" },
+    { name: "Flabébé - Yellow" },
+    { name: "Fidough" },
+    { name: "Slurpuff" },
+    { name: "Toxel" },
+    { name: "Electrike" },
+    { name: "Manectric" },
+    { name: "Farfetch'd" },
+    { name: "Helioptile", alpha: "Alpha" }
 ];
 zaEntries2.forEach(({ name, gender, alpha }) => {
     pokeData[name] = { ...(pokeData[name] || {}), origin: 'ZA', gender: gender || null, alpha: alpha || null };
@@ -1996,7 +2018,7 @@ zaEntries2.forEach(({ name, gender, alpha }) => {
 
 // ── SwSh entries ──────────────────────────────────────────────────────────
 const swshEntries = [
-    "Mime Jr.", "Rolycoly", "Carkol", "Coalossal",
+    "Mr. Mime", "Mime Jr.", "Rolycoly", "Carkol", "Coalossal",
     "Roggenrola", "Boldore", "Gigalith",
     "Dwebble", "Crustle",
     "Nickit", "Thievul", "Linoone G", "Obstagoon", "Meowth G",
