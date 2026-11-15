@@ -1919,7 +1919,8 @@ const supplementalCaught = [
     "Alcremie - Rainbow Swirl Ribbon Sweet",
     "Pignite",
     "Simisear",
-    "Baxcalibur"
+    "Baxcalibur",
+    "Trapinch"
 ];
 
 supplementalCaught.forEach(name => {
@@ -1962,7 +1963,8 @@ zaEntries.forEach(name => {
 
 // ── SV entries ────────────────────────────────────────────────────────────
 const svEntries = [
-    { name: "Milotic F", gender: "Female" }
+    { name: "Milotic F", gender: "Female" },
+    { name: "Trapinch" }
 ];
 svEntries.forEach(({ name, gender }) => {
     pokeData[name] = { ...(pokeData[name] || {}), origin: 'SV', gender: gender || null, alpha: null };
