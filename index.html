@@ -1846,6 +1846,7 @@ const supplementalCaught = [
     "Krokorok", "Vanillite", "Sirfetch'd", "Talonflame",
     "Flabébé - White", "Flabébé - Yellow", "Fidough", "Slurpuff", "Toxel",
     "Electrike", "Manectric", "Farfetch'd",
+    "Florges - Yellow", "Floette - Yellow", "Flabébé - Red", "Floette - Red", "Klefki",
     // ── SwSh ─────────────────────────────────────────────────────────────────
     "Mr. Mime", "Mime Jr.", "Rolycoly", "Carkol", "Coalossal",
     "Roggenrola", "Boldore", "Gigalith",
@@ -2011,7 +2012,12 @@ const zaEntries2 = [
     { name: "Electrike" },
     { name: "Manectric" },
     { name: "Farfetch'd" },
-    { name: "Helioptile", alpha: "Alpha" }
+    { name: "Helioptile", alpha: "Alpha" },
+    { name: "Florges - Yellow" },
+    { name: "Floette - Yellow" },
+    { name: "Flabébé - Red" },
+    { name: "Floette - Red" },
+    { name: "Klefki" }
 ];
 zaEntries2.forEach(({ name, gender, alpha }) => {
     pokeData[name] = { ...(pokeData[name] || {}), origin: 'ZA', gender: gender || null, alpha: alpha || null };
