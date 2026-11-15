@@ -1916,7 +1916,10 @@ const supplementalCaught = [
     "Alcremie - Rainbow Swirl Star Sweet",
     "Alcremie - Rainbow Swirl Clover Sweet",
     "Alcremie - Rainbow Swirl Flower Sweet",
-    "Alcremie - Rainbow Swirl Ribbon Sweet"
+    "Alcremie - Rainbow Swirl Ribbon Sweet",
+    "Pignite",
+    "Simisear",
+    "Baxcalibur"
 ];
 
 supplementalCaught.forEach(name => {
@@ -2017,7 +2020,10 @@ const zaEntries2 = [
     { name: "Floette - Yellow" },
     { name: "Flabébé - Red" },
     { name: "Floette - Red" },
-    { name: "Klefki" }
+    { name: "Klefki" },
+    { name: "Pignite", alpha: "Alpha" },
+    { name: "Simisear" },
+    { name: "Baxcalibur" }
 ];
 zaEntries2.forEach(({ name, gender, alpha }) => {
     pokeData[name] = { ...(pokeData[name] || {}), origin: 'ZA', gender: gender || null, alpha: alpha || null };
